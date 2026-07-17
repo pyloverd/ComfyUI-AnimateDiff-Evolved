@@ -127,9 +127,6 @@ class ApplyAnimateDiffPIAModel:
                 "prev_m_models": ("M_MODELS",),
                 "per_block": ("PER_BLOCK",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
 
     RETURN_TYPES = ("M_MODELS",)
@@ -161,6 +158,7 @@ class ApplyAnimateDiffPIAModel:
 
 
 class LoadAnimateDiffAndInjectPIANode:
+    EXPERIMENTAL = True
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -170,7 +168,6 @@ class LoadAnimateDiffAndInjectPIANode:
             },
             "optional": {
                 "ad_settings": ("AD_SETTINGS",),
-                "deprecation_warning": ("ADEWARN", {"text": "Experimental. Don't expect to work.", "warn_type": "experimental", "color": "#CFC"}),
             }
         }
     
@@ -205,9 +202,6 @@ class PIA_ADKeyframeNode:
                 "inherit_missing": ("BOOLEAN", {"default": True}, ),
                 "guarantee_steps": ("INT", {"default": 1, "min": 0, "max": BIGMAX}),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("AD_KEYFRAMES", )
@@ -260,9 +254,6 @@ class InputPIA_PaperPresetsNode:
                 "print_values": ("BOOLEAN", {"default": False},),
                 #"effect_multival": ("MULTIVAL",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
 
     RETURN_TYPES = ("PIA_INPUT",)

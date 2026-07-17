@@ -301,9 +301,6 @@ class CameraCtrlADKeyframeNode:
                 "inherit_missing": ("BOOLEAN", {"default": True}, ),
                 "guarantee_steps": ("INT", {"default": 1, "min": 0, "max": BIGMAX}),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("AD_KEYFRAMES", )
@@ -403,9 +400,6 @@ class CameraCtrlPoseBasic:
             "optional": {
                 "prev_poses": ("CAMERACTRL_POSES",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
 
     RETURN_TYPES = ("CAMERACTRL_POSES",)

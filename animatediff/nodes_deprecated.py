@@ -34,7 +34,6 @@ class AnimateDiffLoaderDEPR:
                 "unlimited_area_hack": ("BOOLEAN", {"default": False},),
                 "beta_schedule": (BetaSchedules.get_alias_list_with_first_element(BetaSchedules.SQRT_LINEAR),),
             },
-            "optional": {"deprecation_warning": ("ADEWARN", {"text": "Deprecated"})},
         }
 
     RETURN_TYPES = ("MODEL", "LATENT")
@@ -95,7 +94,6 @@ class AnimateDiffLoaderAdvancedDEPR:
                 "closed_loop": ("BOOLEAN", {"default": False},),
                 "beta_schedule": (BetaSchedules.get_alias_list_with_first_element(BetaSchedules.SQRT_LINEAR),),
             },
-            "optional": {"deprecation_warning": ("ADEWARN", {"text": "Deprecated"})},
         }
 
     RETURN_TYPES = ("MODEL", "LATENT")
@@ -171,7 +169,6 @@ class LegacyAnimateDiffLoaderWithContextDEPR:
                 "motion_scale": ("FLOAT", {"default": 1.0, "min": 0.0, "step": 0.001}),
                 "apply_v2_models_properly": ("BOOLEAN", {"default": True}),
                 "ad_keyframes": ("AD_KEYFRAMES",),
-                "deprecation_warning": ("ADEWARN", {"text": "Deprecated; use AnimateDiff Loader instead."}),
             }
         }
     
@@ -269,7 +266,6 @@ class AnimateDiffCombineDEPR:
                 "pingpong": ("BOOLEAN", {"default": False}),
                 "save_image": ("BOOLEAN", {"default": True}),
             },
-            "optional": {"deprecation_warning": ("ADEWARN", {"text": "Deprecated. Use VHS Video Combine"})},
             "hidden": {
                 "prompt": "PROMPT",
                 "extra_pnginfo": "EXTRA_PNGINFO",
@@ -380,7 +376,7 @@ class AnimateDiffCombineDEPR:
                 "format": format,
             }
         ]
-        return {"ui": {"gifs": previews}}
+        return {"ui": {"images": previews, "animated": (True,)}}
 
 
 
@@ -394,7 +390,6 @@ class AnimateDiffModelSettingsDEPR:
             },
             "optional": {
                 "mask_motion_scale": ("MASK",),
-                "deprecation_warning": ("ADEWARN", {"text": "Deprecated"}),
             }
         }
     
@@ -424,7 +419,6 @@ class AnimateDiffModelSettingsSimpleDEPR:
                 "mask_motion_scale": ("MASK",),
                 "min_motion_scale": ("FLOAT", {"default": 1.0, "min": 0.0, "step": 0.001}),
                 "max_motion_scale": ("FLOAT", {"default": 1.0, "min": 0.0, "step": 0.001}),
-                "deprecation_warning": ("ADEWARN", {"text": "Deprecated"}),
             }
         }
     
@@ -464,7 +458,6 @@ class AnimateDiffModelSettingsAdvancedDEPR:
                 "mask_motion_scale": ("MASK",),
                 "min_motion_scale": ("FLOAT", {"default": 1.0, "min": 0.0, "step": 0.001}),
                 "max_motion_scale": ("FLOAT", {"default": 1.0, "min": 0.0, "step": 0.001}),
-                "deprecation_warning": ("ADEWARN", {"text": "Deprecated"}),
             }
         }
     
@@ -520,7 +513,6 @@ class AnimateDiffModelSettingsAdvancedAttnStrengthsDEPR:
                 "mask_motion_scale": ("MASK",),
                 "min_motion_scale": ("FLOAT", {"default": 1.0, "min": 0.0, "step": 0.001}),
                 "max_motion_scale": ("FLOAT", {"default": 1.0, "min": 0.0, "step": 0.001}),
-                "deprecation_warning": ("ADEWARN", {"text": "Deprecated"}),
             }
         }
     

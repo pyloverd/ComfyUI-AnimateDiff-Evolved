@@ -10,9 +10,6 @@ class AnimateDiffSettingsNode:
                 "pe_adjust": ("PE_ADJUST",),
                 "weight_adjust": ("WEIGHT_ADJUST",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("AD_SETTINGS",)
@@ -38,9 +35,6 @@ class ManualAdjustPENode:
             "optional": {
                 "prev_pe_adjust": ("PE_ADJUST",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("PE_ADJUST",)
@@ -72,9 +66,6 @@ class SweetspotStretchPENode:
             "optional": {
                 "prev_pe_adjust": ("PE_ADJUST",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("PE_ADJUST",)
@@ -102,9 +93,6 @@ class FullStretchPENode:
             "optional": {
                 "prev_pe_adjust": ("PE_ADJUST",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("PE_ADJUST",)
@@ -132,9 +120,6 @@ class WeightAdjustAllAddNode:
             "optional": {
                 "prev_weight_adjust": ("WEIGHT_ADJUST",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("WEIGHT_ADJUST",)
@@ -164,9 +149,6 @@ class WeightAdjustAllMultNode:
             "optional": {
                 "prev_weight_adjust": ("WEIGHT_ADJUST",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("WEIGHT_ADJUST",)
@@ -198,9 +180,6 @@ class WeightAdjustIndivAddNode:
             "optional": {
                 "prev_weight_adjust": ("WEIGHT_ADJUST",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("WEIGHT_ADJUST",)
@@ -234,9 +213,6 @@ class WeightAdjustIndivMultNode:
             "optional": {
                 "prev_weight_adjust": ("WEIGHT_ADJUST",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("WEIGHT_ADJUST",)
@@ -275,9 +251,6 @@ class WeightAdjustIndivAttnAddNode:
             "optional": {
                 "prev_weight_adjust": ("WEIGHT_ADJUST",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("WEIGHT_ADJUST",)
@@ -324,9 +297,6 @@ class WeightAdjustIndivAttnMultNode:
             "optional": {
                 "prev_weight_adjust": ("WEIGHT_ADJUST",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("WEIGHT_ADJUST",)

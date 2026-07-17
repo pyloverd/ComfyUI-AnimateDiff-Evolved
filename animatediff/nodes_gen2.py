@@ -101,9 +101,6 @@ class ApplyAnimateDiffModelNode:
                 "prev_m_models": ("M_MODELS",),
                 "per_block": ("PER_BLOCK",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("M_MODELS",)
@@ -156,9 +153,6 @@ class ApplyAnimateDiffModelBasicNode:
                 "ad_keyframes": ("AD_KEYFRAMES",),
                 "per_block": ("PER_BLOCK",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("M_MODELS",)
@@ -185,9 +179,6 @@ class LoadAnimateDiffModelNode:
             "optional": {
                 "ad_settings": ("AD_SETTINGS",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 50}),
-            }
         }
 
     RETURN_TYPES = ("MOTION_MODEL_ADE",)
@@ -216,9 +207,6 @@ class ADKeyframeNode:
                 "inherit_missing": ("BOOLEAN", {"default": True}, ),
                 "guarantee_steps": ("INT", {"default": 1, "min": 0, "max": BIGMAX}),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("AD_KEYFRAMES", )

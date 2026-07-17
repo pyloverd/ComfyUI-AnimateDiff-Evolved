@@ -39,9 +39,6 @@ class ADBlockComboNode:
                 "effect": ("MULTIVAL",),
                 "scale": ("MULTIVAL",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("AD_BLOCK",)
@@ -68,7 +65,6 @@ class ADBlockIndivNode:
                 "effect": ("MULTIVAL",),
                 "scale_0": ("MULTIVAL",),
                 "scale_1": ("MULTIVAL",),
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
             }
         }
     
@@ -97,7 +93,6 @@ class PerBlockHighLevelNode:
                 "down": ("AD_BLOCK",),
                 "mid": ("AD_BLOCK",),
                 "up": ("AD_BLOCK",),
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
             }
         }
     
@@ -141,7 +136,6 @@ class PerBlock_SD15_MidLevelNode:
                 "up_1": ("AD_BLOCK",),
                 "up_2": ("AD_BLOCK",),
                 "up_3": ("AD_BLOCK",),
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
             }
         }
     
@@ -209,7 +203,6 @@ class PerBlock_SD15_LowLevelNode:
                 "up_3__0": ("AD_BLOCK",),
                 "up_3__1": ("AD_BLOCK",),
                 "up_3__2": ("AD_BLOCK",),
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
             }
         }
     
@@ -282,7 +275,6 @@ class PerBlock_SD15_FromFloatsNode:
             "optional": {
                 "effect_21_floats": ("FLOATS",),
                 "scale_21_floats": ("FLOATS",),
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
             }
         }
     
@@ -336,7 +328,6 @@ class PerBlock_SDXL_MidLevelNode:
                 "up_0": ("AD_BLOCK",),
                 "up_1": ("AD_BLOCK",),
                 "up_2": ("AD_BLOCK",),
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
             }
         }
     
@@ -395,7 +386,6 @@ class PerBlock_SDXL_LowLevelNode:
                 "up_2__0": ("AD_BLOCK",),
                 "up_2__1": ("AD_BLOCK",),
                 "up_2__2": ("AD_BLOCK",),
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
             }
         }
     
@@ -458,7 +448,6 @@ class PerBlock_SDXL_FromFloatsNode:
             "optional": {
                 "effect_16_floats": ("FLOATS",),
                 "scale_16_floats": ("FLOATS",),
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
             }
         }
     

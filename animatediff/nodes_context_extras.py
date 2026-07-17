@@ -21,9 +21,6 @@ class SetContextExtrasOnContextOptions:
             "optional": {
                 "context_extras": ("CONTEXT_EXTRAS",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("CONTEXT_OPTIONS",)
@@ -54,9 +51,6 @@ class ContextExtras_NaiveReuse:
                 "end_percent": ("FLOAT", {"default": 0.15, "min": 0.0, "max": 1.0, "step": 0.001}),
                 "weighted_mean": ("FLOAT", {"default": 0.95, "min": 0.0, "max": 1.0, "step": 0.001}),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("CONTEXT_EXTRAS",)
@@ -89,9 +83,6 @@ class NaiveReuse_KeyframeMultivalNode:
                 "guarantee_steps": ("INT", {"default": 1, "min": 0, "max": BIGMAX}),
                 "inherit_missing": ("BOOLEAN", {"default": True}, ),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("NAIVEREUSE_KEYFRAME",)
@@ -128,9 +119,6 @@ class NaiveReuse_KeyframeInterpolationNode:
                 "prev_kf": ("NAIVEREUSE_KEYFRAME",),
                 "mult_multival": ("MULTIVAL",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("NAIVEREUSE_KEYFRAME",)
@@ -178,9 +166,6 @@ class NaiveReuse_KeyframeFromListNode:
                 "prev_kf": ("NAIVEREUSE_KEYFRAME",),
                 "mult_multival": ("MULTIVAL",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("NAIVEREUSE_KEYFRAME",)
@@ -235,9 +220,6 @@ class ContextExtras_ContextRef:
                 "start_percent": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.001}),
                 "end_percent": ("FLOAT", {"default": 0.25, "min": 0.0, "max": 1.0, "step": 0.001}),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("CONTEXT_EXTRAS",)
@@ -279,9 +261,6 @@ class ContextRef_KeyframeMultivalNode:
                 "guarantee_steps": ("INT", {"default": 1, "min": 0, "max": BIGMAX}),
                 "inherit_missing": ("BOOLEAN", {"default": True}, ),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("CONTEXTREF_KEYFRAME",)
@@ -321,9 +300,6 @@ class ContextRef_KeyframeInterpolationNode:
                 "mode_replace": ("CONTEXTREF_MODE",),
                 "tune_replace": ("CONTEXTREF_TUNE",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("CONTEXTREF_KEYFRAME",)
@@ -372,9 +348,6 @@ class ContextRef_KeyframeFromListNode:
                 "mode_replace": ("CONTEXTREF_MODE",),
                 "tune_replace": ("CONTEXTREF_TUNE",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("CONTEXTREF_KEYFRAME",)
@@ -416,9 +389,6 @@ class ContextRef_ModeFirst:
         return {
             "required": {
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("CONTEXTREF_MODE",)
@@ -439,9 +409,6 @@ class ContextRef_ModeSliding:
             "optional": {
                 "sliding_width": ("INT", {"default": 2, "min": 2, "max": BIGMAX, "step": 1}),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("CONTEXTREF_MODE",)
@@ -463,9 +430,6 @@ class ContextRef_ModeIndexes:
                 "switch_on_idxs": ("STRING", {"default": ""}),
                 "always_include_0": ("BOOLEAN", {"default": True},),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("CONTEXTREF_MODE",)
@@ -494,9 +458,6 @@ class ContextRef_TuneAttnAdain:
                 "adain_ref_weight": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "adain_strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("CONTEXTREF_TUNE",)
@@ -522,9 +483,6 @@ class ContextRef_TuneAttn:
                 "attn_ref_weight": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "attn_strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("CONTEXTREF_TUNE",)

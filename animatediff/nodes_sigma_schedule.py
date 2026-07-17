@@ -46,9 +46,6 @@ class RawSigmaScheduleNode:
                 "lcm_original_timesteps": ("INT", {"default": 50, "min": 1, "max": 1000}),
                 "zsnr": ("BOOLEAN", {"default": False}),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("SIGMA_SCHEDULE",)
@@ -83,9 +80,6 @@ class WeightedAverageSigmaScheduleNode:
                 "schedule_B": ("SIGMA_SCHEDULE",),
                 "weight_A": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.001}),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("SIGMA_SCHEDULE",)
@@ -111,9 +105,6 @@ class InterpolatedWeightedAverageSigmaScheduleNode:
                 "weight_A_End": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.001}),
                 "interpolation": (InterpolationMethod._LIST,),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("SIGMA_SCHEDULE",)
@@ -142,9 +133,6 @@ class SplitAndCombineSigmaScheduleNode:
                 "schedule_End": ("SIGMA_SCHEDULE",),
                 "idx_split_percent": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.001})
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("SIGMA_SCHEDULE",)
@@ -171,9 +159,6 @@ class SigmaScheduleToSigmasNode:
                 "steps": ("INT", {"default": 20, "min": 1, "max": 10000}),
                 "denoise": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("SIGMAS",)
