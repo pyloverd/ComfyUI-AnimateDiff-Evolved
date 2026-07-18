@@ -36,9 +36,6 @@ class SampleSettingsNode:
                 "ancestral_opts": ("ANCESTRAL_OPTS",),
                 #"noise_calib": ("NOISE_CALIBRATION",), # TODO: bring back once NoiseCalibration is working
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
 
     RETURN_TYPES = ("SAMPLE_SETTINGS",)
@@ -71,9 +68,6 @@ class AncestralOptionsNode:
             "optional": {
                 "seed_override": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "forceInput": True}),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
 
     RETURN_TYPES = ("ANCESTRAL_OPTS",)
@@ -101,9 +95,6 @@ class NoiseLayerReplaceNode:
                 "mask_optional": ("MASK",),
                 "seed_override": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "forceInput": True}),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
 
     RETURN_TYPES = ("NOISE_LAYERS",)
@@ -139,9 +130,6 @@ class NoiseLayerAddNode:
                 "mask_optional": ("MASK",),
                 "seed_override": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "forceInput": True}),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
 
     RETURN_TYPES = ("NOISE_LAYERS",)
@@ -180,9 +168,6 @@ class NoiseLayerAddWeightedNode:
                 "mask_optional": ("MASK",),
                 "seed_override": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "forceInput": True}),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
 
     RETURN_TYPES = ("NOISE_LAYERS",)
@@ -220,9 +205,6 @@ class NoiseLayerNormalizedSumNode:
                 "mask_optional": ("MASK",),
                 "seed_override": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "forceInput": True}),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
 
     RETURN_TYPES = ("NOISE_LAYERS",)
@@ -284,9 +266,6 @@ class FreeInitOptionsNode:
                 "iter_batch_offset": ("INT", {"default": 0, "min": 0, "max": BIGMAX}),
                 "iter_seed_offset": ("INT", {"default": 1, "min": BIGMIN, "max": BIGMAX}),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
 
     RETURN_TYPES = ("ITERATION_OPTS",)
@@ -311,9 +290,6 @@ class NoiseCalibrationNode:
                 "calib_iterations": ("INT", {"default": 1, "min": 1, "step": 1}),
                 "thresh_freq": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.001}),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("NOISE_CALIBRATION",)
@@ -336,9 +312,6 @@ class CustomCFGNode:
             "optional": {
                 "cfg_extras": ("CFG_EXTRAS",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
 
     RETURN_TYPES = ("CUSTOM_CFG",)
@@ -362,9 +335,6 @@ class CustomCFGSimpleNode:
             "optional": {
                 "cfg_extras": ("CFG_EXTRAS",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("CUSTOM_CFG",)
@@ -388,9 +358,6 @@ class CustomCFGKeyframeNode:
                 "prev_custom_cfg": ("CUSTOM_CFG",),
                 "cfg_extras": ("CFG_EXTRAS",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
 
     RETURN_TYPES = ("CUSTOM_CFG",)
@@ -420,9 +387,6 @@ class CustomCFGKeyframeSimpleNode:
                 "prev_custom_cfg": ("CUSTOM_CFG",),
                 "cfg_extras": ("CFG_EXTRAS",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 10}),
-            }
         }
     
     RETURN_TYPES = ("CUSTOM_CFG",)
@@ -452,9 +416,6 @@ class CustomCFGKeyframeInterpolationNode:
                 "prev_custom_cfg": ("CUSTOM_CFG",),
                 "cfg_extras": ("CFG_EXTRAS",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("CUSTOM_CFG",)
@@ -541,9 +502,6 @@ class CFGExtrasPAGNode:
             "optional": {
                 "prev_extras": ("CFG_EXTRAS",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
 
     RETURN_TYPES = ("CFG_EXTRAS",)
@@ -575,9 +533,6 @@ class CFGExtrasPAGSimpleNode:
             "optional": {
                 "prev_extras": ("CFG_EXTRAS",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
 
     RETURN_TYPES = ("CFG_EXTRAS",)
@@ -630,9 +585,6 @@ class CFGExtrasRescaleCFGSimpleNode:
             "optional": {
                 "prev_extras": ("CFG_EXTRAS",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 10}),
-            }
         }
 
     RETURN_TYPES = ("CFG_EXTRAS",)
@@ -662,9 +614,6 @@ class NoisedImageInjectionNode:
                 "strength_multival": ("MULTIVAL", ),
                 "prev_image_inject": ("IMAGE_INJECT", ),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("IMAGE_INJECT",)
@@ -694,9 +643,6 @@ class NoisedImageInjectOptionsNode:
                 "composite_x": ("INT", {"default": 0, "min": 0, "max": MAX_RESOLUTION, "step": 1}),
                 "composite_y": ("INT", {"default": 0, "min": 0, "max": MAX_RESOLUTION, "step": 1}),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("IMAGE_INJECT_OPTIONS",)

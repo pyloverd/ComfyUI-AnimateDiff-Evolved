@@ -36,9 +36,6 @@ class ApplyAnimateLCMI2VModel:
                 "prev_m_models": ("M_MODELS",),
                 "per_block": ("PER_BLOCK",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("M_MODELS",)
@@ -96,6 +93,7 @@ class LoadAnimateLCMI2VModelNode:
 
 
 class LoadAnimateDiffAndInjectI2VNode:
+    EXPERIMENTAL = True
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -105,7 +103,6 @@ class LoadAnimateDiffAndInjectI2VNode:
             },
             "optional": {
                 "ad_settings": ("AD_SETTINGS",),
-                "deprecation_warning": ("ADEWARN", {"text": "Experimental. Don't expect to work.", "warn_type": "experimental", "color": "#CFC"}),
             }
         }
     

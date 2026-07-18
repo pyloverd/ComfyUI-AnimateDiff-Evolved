@@ -66,6 +66,7 @@ class LoopedUniformContextOptionsNode:
 
 # This Legacy version exists to maintain compatiblity with old workflows
 class LegacyLoopedUniformContextOptionsNode:
+    DEPRECATED = True
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -84,7 +85,6 @@ class LegacyLoopedUniformContextOptionsNode:
                 "guarantee_steps": ("INT", {"default": 1, "min": 0, "max": BIGMAX}),
                 "prev_context": ("CONTEXT_OPTIONS",),
                 "view_opts": ("VIEW_OPTS",),
-                "deprecation_warning": ("ADEWARN", {"text": ""}),
             }
         }
     
@@ -237,9 +237,6 @@ class ViewAsContextOptionsNode:
                 "guarantee_steps": ("INT", {"default": 1, "min": 0, "max": BIGMAX}),
                 "prev_context": ("CONTEXT_OPTIONS",),
             },
-            "hidden": {
-                "autosize": ("ADEAUTOSIZE", {"padding": 0}),
-            }
         }
     
     RETURN_TYPES = ("CONTEXT_OPTIONS",)
