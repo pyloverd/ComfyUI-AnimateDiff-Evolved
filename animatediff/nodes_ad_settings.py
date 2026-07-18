@@ -1,49 +1,55 @@
+from comfy_api.latest import io
 from .ad_settings import AdjustPE, AdjustWeight, AdjustGroup, AnimateDiffSettings
 from .utils_model import BIGMAX
 
 
-class AnimateDiffSettingsNode:
+class AnimateDiffSettingsNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "optional": {
-                "pe_adjust": ("PE_ADJUST",),
-                "weight_adjust": ("WEIGHT_ADJUST",),
-            },
-        }
-    
-    RETURN_TYPES = ("AD_SETTINGS",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/ad settings"
-    FUNCTION = "get_ad_settings"
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_AnimateDiffSettings',
+            display_name='AnimateDiff Settings 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/ad settings',
+            inputs=[
+                io.Custom("PE_ADJUST").Input('pe_adjust', optional=True),
+                io.Custom("WEIGHT_ADJUST").Input('weight_adjust', optional=True),
+            ],
+            outputs=[
+                io.Custom("AD_SETTINGS").Output('AD_SETTINGS'),
+            ],
+        )
 
-    def get_ad_settings(self, pe_adjust: AdjustGroup=None, weight_adjust: AdjustGroup=None):
-        return (AnimateDiffSettings(adjust_pe=pe_adjust, adjust_weight=weight_adjust),)
 
-
-class ManualAdjustPENode:
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "cap_initial_pe_length": ("INT", {"default": 0, "min": 0, "step": 1}),
-                "interpolate_pe_to_length": ("INT", {"default": 0, "min": 0, "step": 1}),
-                "initial_pe_idx_offset": ("INT", {"default": 0, "min": 0, "step": 1}),
-                "final_pe_idx_offset": ("INT", {"default": 0, "min": 0, "step": 1}),
-                "print_adjustment": ("BOOLEAN", {"default": False}),
-                
-            },
-            "optional": {
-                "prev_pe_adjust": ("PE_ADJUST",),
-            },
-        }
-    
-    RETURN_TYPES = ("PE_ADJUST",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/ad settings/pe adjust"
-    FUNCTION = "get_pe_adjust"
+    def execute(cls, pe_adjust: AdjustGroup=None, weight_adjust: AdjustGroup=None) -> io.NodeOutput:
+        return io.NodeOutput(AnimateDiffSettings(adjust_pe=pe_adjust, adjust_weight=weight_adjust))
 
-    def get_pe_adjust(self, cap_initial_pe_length: int, interpolate_pe_to_length: int, 
+
+class ManualAdjustPENode(io.ComfyNode):
+    @classmethod
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_AdjustPEManual',
+            display_name='Adjust PE [Manual] 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/ad settings/pe adjust',
+            inputs=[
+                io.Int.Input('cap_initial_pe_length', default=0, min=0, step=1),
+                io.Int.Input('interpolate_pe_to_length', default=0, min=0, step=1),
+                io.Int.Input('initial_pe_idx_offset', default=0, min=0, step=1),
+                io.Int.Input('final_pe_idx_offset', default=0, min=0, step=1),
+                io.Boolean.Input('print_adjustment', default=False),
+                io.Custom("PE_ADJUST").Input('prev_pe_adjust', optional=True),
+            ],
+            outputs=[
+                io.Custom("PE_ADJUST").Output('PE_ADJUST'),
+            ],
+        )
+
+
+    @classmethod
+    def execute(cls, cap_initial_pe_length: int, interpolate_pe_to_length: int,
                       initial_pe_idx_offset: int, final_pe_idx_offset: int, print_adjustment: bool,
-                      prev_pe_adjust: AdjustGroup=None):
+                      prev_pe_adjust: AdjustGroup=None) -> io.NodeOutput:
         if prev_pe_adjust is None:
             prev_pe_adjust = AdjustGroup()
         prev_pe_adjust = prev_pe_adjust.clone()
@@ -51,82 +57,88 @@ class ManualAdjustPENode:
                           initial_pe_idx_offset=initial_pe_idx_offset, final_pe_idx_offset=final_pe_idx_offset,
                           print_adjustment=print_adjustment)
         prev_pe_adjust.add(adjust)
-        return (prev_pe_adjust,)
+        return io.NodeOutput(prev_pe_adjust)
 
 
-class SweetspotStretchPENode:
+class SweetspotStretchPENode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "sweetspot": ("INT", {"default": 16, "min": 0, "max": BIGMAX},),
-                "new_sweetspot": ("INT", {"default": 16, "min": 0, "max": BIGMAX},),
-                "print_adjustment": ("BOOLEAN", {"default": False}),
-            },
-            "optional": {
-                "prev_pe_adjust": ("PE_ADJUST",),
-            },
-        }
-    
-    RETURN_TYPES = ("PE_ADJUST",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/ad settings/pe adjust"
-    FUNCTION = "get_pe_adjust"
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_AdjustPESweetspotStretch',
+            display_name='Adjust PE [Sweetspot] 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/ad settings/pe adjust',
+            inputs=[
+                io.Int.Input('sweetspot', default=16, max=9007199254740991, min=0),
+                io.Int.Input('new_sweetspot', default=16, max=9007199254740991, min=0),
+                io.Boolean.Input('print_adjustment', default=False),
+                io.Custom("PE_ADJUST").Input('prev_pe_adjust', optional=True),
+            ],
+            outputs=[
+                io.Custom("PE_ADJUST").Output('PE_ADJUST'),
+            ],
+        )
 
-    def get_pe_adjust(self, sweetspot: int, new_sweetspot: int, print_adjustment: bool, prev_pe_adjust: AdjustGroup=None):
+
+    @classmethod
+    def execute(cls, sweetspot: int, new_sweetspot: int, print_adjustment: bool, prev_pe_adjust: AdjustGroup=None) -> io.NodeOutput:
         if prev_pe_adjust is None:
             prev_pe_adjust = AdjustGroup()
         prev_pe_adjust = prev_pe_adjust.clone()
         adjust = AdjustPE(cap_initial_pe_length=sweetspot, interpolate_pe_to_length=new_sweetspot,
                           print_adjustment=print_adjustment)
         prev_pe_adjust.add(adjust)
-        return (prev_pe_adjust,)
+        return io.NodeOutput(prev_pe_adjust)
 
 
-class FullStretchPENode:
+class FullStretchPENode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "pe_stretch": ("INT", {"default": 0, "min": 0, "max": BIGMAX},),
-                "print_adjustment": ("BOOLEAN", {"default": False}),
-            },
-            "optional": {
-                "prev_pe_adjust": ("PE_ADJUST",),
-            },
-        }
-    
-    RETURN_TYPES = ("PE_ADJUST",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/ad settings/pe adjust"
-    FUNCTION = "get_pe_adjust"
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_AdjustPEFullStretch',
+            display_name='Adjust PE [Full Stretch] 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/ad settings/pe adjust',
+            inputs=[
+                io.Int.Input('pe_stretch', default=0, max=9007199254740991, min=0),
+                io.Boolean.Input('print_adjustment', default=False),
+                io.Custom("PE_ADJUST").Input('prev_pe_adjust', optional=True),
+            ],
+            outputs=[
+                io.Custom("PE_ADJUST").Output('PE_ADJUST'),
+            ],
+        )
 
-    def get_pe_adjust(self, pe_stretch: int, print_adjustment: bool, prev_pe_adjust: AdjustGroup=None):
+
+    @classmethod
+    def execute(cls, pe_stretch: int, print_adjustment: bool, prev_pe_adjust: AdjustGroup=None) -> io.NodeOutput:
         if prev_pe_adjust is None:
             prev_pe_adjust = AdjustGroup()
         prev_pe_adjust = prev_pe_adjust.clone()
         adjust = AdjustPE(motion_pe_stretch=pe_stretch,
                           print_adjustment=print_adjustment)
         prev_pe_adjust.add(adjust)
-        return (prev_pe_adjust,)
+        return io.NodeOutput(prev_pe_adjust)
 
 
-class WeightAdjustAllAddNode:
+class WeightAdjustAllAddNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "all_ADD": ("FLOAT", {"default": 0.0, "min": -2.0, "max": 2.0, "step": 0.000001}),
-                "print_adjustment": ("BOOLEAN", {"default": False}),
-            },
-            "optional": {
-                "prev_weight_adjust": ("WEIGHT_ADJUST",),
-            },
-        }
-    
-    RETURN_TYPES = ("WEIGHT_ADJUST",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/ad settings/weight adjust"
-    FUNCTION = "get_weight_adjust"
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_AdjustWeightAllAdd',
+            display_name='Adjust Weight [All◆Add] 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/ad settings/weight adjust',
+            inputs=[
+                io.Float.Input('all_ADD', default=0.0, max=2.0, min=-2.0, step=1e-06),
+                io.Boolean.Input('print_adjustment', default=False),
+                io.Custom("WEIGHT_ADJUST").Input('prev_weight_adjust', optional=True),
+            ],
+            outputs=[
+                io.Custom("WEIGHT_ADJUST").Output('WEIGHT_ADJUST'),
+            ],
+        )
 
-    def get_weight_adjust(self, all_ADD: float, print_adjustment: bool, prev_weight_adjust: AdjustGroup=None):
+
+    @classmethod
+    def execute(cls, all_ADD: float, print_adjustment: bool, prev_weight_adjust: AdjustGroup=None) -> io.NodeOutput:
         if prev_weight_adjust is None:
             prev_weight_adjust = AdjustGroup()
         prev_weight_adjust = prev_weight_adjust.clone()
@@ -135,27 +147,29 @@ class WeightAdjustAllAddNode:
             print_adjustment=print_adjustment
         )
         prev_weight_adjust.add(adjust)
-        return (prev_weight_adjust,)
+        return io.NodeOutput(prev_weight_adjust)
 
 
-class WeightAdjustAllMultNode:
+class WeightAdjustAllMultNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "all_MULT": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 2.0, "step": 0.000001}),
-                "print_adjustment": ("BOOLEAN", {"default": False}),
-            },
-            "optional": {
-                "prev_weight_adjust": ("WEIGHT_ADJUST",),
-            },
-        }
-    
-    RETURN_TYPES = ("WEIGHT_ADJUST",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/ad settings/weight adjust"
-    FUNCTION = "get_weight_adjust"
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_AdjustWeightAllMult',
+            display_name='Adjust Weight [All◆Mult] 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/ad settings/weight adjust',
+            inputs=[
+                io.Float.Input('all_MULT', default=1.0, max=2.0, min=0.0, step=1e-06),
+                io.Boolean.Input('print_adjustment', default=False),
+                io.Custom("WEIGHT_ADJUST").Input('prev_weight_adjust', optional=True),
+            ],
+            outputs=[
+                io.Custom("WEIGHT_ADJUST").Output('WEIGHT_ADJUST'),
+            ],
+        )
 
-    def get_weight_adjust(self, all_MULT: float, print_adjustment: bool, prev_weight_adjust: AdjustGroup=None):
+
+    @classmethod
+    def execute(cls, all_MULT: float, print_adjustment: bool, prev_weight_adjust: AdjustGroup=None) -> io.NodeOutput:
         if prev_weight_adjust is None:
             prev_weight_adjust = AdjustGroup()
         prev_weight_adjust = prev_weight_adjust.clone()
@@ -164,29 +178,31 @@ class WeightAdjustAllMultNode:
             print_adjustment=print_adjustment
         )
         prev_weight_adjust.add(adjust)
-        return (prev_weight_adjust,)
+        return io.NodeOutput(prev_weight_adjust)
 
 
-class WeightAdjustIndivAddNode:
+class WeightAdjustIndivAddNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "pe_ADD": ("FLOAT", {"default": 0.0, "min": -2.0, "max": 2.0, "step": 0.000001}),
-                "attn_ADD": ("FLOAT", {"default": 0.0, "min": -2.0, "max": 2.0, "step": 0.000001}),
-                "other_ADD": ("FLOAT", {"default": 0.0, "min": -2.0, "max": 2.0, "step": 0.000001}),
-                "print_adjustment": ("BOOLEAN", {"default": False}),
-            },
-            "optional": {
-                "prev_weight_adjust": ("WEIGHT_ADJUST",),
-            },
-        }
-    
-    RETURN_TYPES = ("WEIGHT_ADJUST",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/ad settings/weight adjust"
-    FUNCTION = "get_weight_adjust"
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_AdjustWeightIndivAdd',
+            display_name='Adjust Weight [Indiv◆Add] 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/ad settings/weight adjust',
+            inputs=[
+                io.Float.Input('pe_ADD', default=0.0, max=2.0, min=-2.0, step=1e-06),
+                io.Float.Input('attn_ADD', default=0.0, max=2.0, min=-2.0, step=1e-06),
+                io.Float.Input('other_ADD', default=0.0, max=2.0, min=-2.0, step=1e-06),
+                io.Boolean.Input('print_adjustment', default=False),
+                io.Custom("WEIGHT_ADJUST").Input('prev_weight_adjust', optional=True),
+            ],
+            outputs=[
+                io.Custom("WEIGHT_ADJUST").Output('WEIGHT_ADJUST'),
+            ],
+        )
 
-    def get_weight_adjust(self, pe_ADD: float, attn_ADD: float, other_ADD: float, print_adjustment: bool, prev_weight_adjust: AdjustGroup=None):
+
+    @classmethod
+    def execute(cls, pe_ADD: float, attn_ADD: float, other_ADD: float, print_adjustment: bool, prev_weight_adjust: AdjustGroup=None) -> io.NodeOutput:
         if prev_weight_adjust is None:
             prev_weight_adjust = AdjustGroup()
         prev_weight_adjust = prev_weight_adjust.clone()
@@ -197,29 +213,31 @@ class WeightAdjustIndivAddNode:
             print_adjustment=print_adjustment
         )
         prev_weight_adjust.add(adjust)
-        return (prev_weight_adjust,)
+        return io.NodeOutput(prev_weight_adjust)
 
 
-class WeightAdjustIndivMultNode:
+class WeightAdjustIndivMultNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "pe_MULT": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 2.0, "step": 0.000001}),
-                "attn_MULT": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 2.0, "step": 0.000001}),
-                "other_MULT": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 2.0, "step": 0.000001}),
-                "print_adjustment": ("BOOLEAN", {"default": False}),
-            },
-            "optional": {
-                "prev_weight_adjust": ("WEIGHT_ADJUST",),
-            },
-        }
-    
-    RETURN_TYPES = ("WEIGHT_ADJUST",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/ad settings/weight adjust"
-    FUNCTION = "get_weight_adjust"
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_AdjustWeightIndivMult',
+            display_name='Adjust Weight [Indiv◆Mult] 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/ad settings/weight adjust',
+            inputs=[
+                io.Float.Input('pe_MULT', default=1.0, max=2.0, min=0.0, step=1e-06),
+                io.Float.Input('attn_MULT', default=1.0, max=2.0, min=0.0, step=1e-06),
+                io.Float.Input('other_MULT', default=1.0, max=2.0, min=0.0, step=1e-06),
+                io.Boolean.Input('print_adjustment', default=False),
+                io.Custom("WEIGHT_ADJUST").Input('prev_weight_adjust', optional=True),
+            ],
+            outputs=[
+                io.Custom("WEIGHT_ADJUST").Output('WEIGHT_ADJUST'),
+            ],
+        )
 
-    def get_weight_adjust(self, pe_MULT: float, attn_MULT: float, other_MULT: float, print_adjustment: bool, prev_weight_adjust: AdjustGroup=None):
+
+    @classmethod
+    def execute(cls, pe_MULT: float, attn_MULT: float, other_MULT: float, print_adjustment: bool, prev_weight_adjust: AdjustGroup=None) -> io.NodeOutput:
         if prev_weight_adjust is None:
             prev_weight_adjust = AdjustGroup()
         prev_weight_adjust = prev_weight_adjust.clone()
@@ -230,37 +248,39 @@ class WeightAdjustIndivMultNode:
             print_adjustment=print_adjustment
         )
         prev_weight_adjust.add(adjust)
-        return (prev_weight_adjust,)
+        return io.NodeOutput(prev_weight_adjust)
 
 
-class WeightAdjustIndivAttnAddNode:
+class WeightAdjustIndivAttnAddNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "pe_ADD": ("FLOAT", {"default": 0.0, "min": -2.0, "max": 2.0, "step": 0.000001}),
-                "attn_ADD": ("FLOAT", {"default": 0.0, "min": -2.0, "max": 2.0, "step": 0.000001}),
-                "attn_q_ADD": ("FLOAT", {"default": 0.0, "min": -2.0, "max": 2.0, "step": 0.000001}),
-                "attn_k_ADD": ("FLOAT", {"default": 0.0, "min": -2.0, "max": 2.0, "step": 0.000001}),
-                "attn_v_ADD": ("FLOAT", {"default": 0.0, "min": -2.0, "max": 2.0, "step": 0.000001}),
-                "attn_out_weight_ADD": ("FLOAT", {"default": 0.0, "min": -2.0, "max": 2.0, "step": 0.000001}),
-                "attn_out_bias_ADD": ("FLOAT", {"default": 0.0, "min": -2.0, "max": 2.0, "step": 0.000001}),
-                "other_ADD": ("FLOAT", {"default": 0.0, "min": -2.0, "max": 2.0, "step": 0.000001}),
-                "print_adjustment": ("BOOLEAN", {"default": False}),
-            },
-            "optional": {
-                "prev_weight_adjust": ("WEIGHT_ADJUST",),
-            },
-        }
-    
-    RETURN_TYPES = ("WEIGHT_ADJUST",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/ad settings/weight adjust"
-    FUNCTION = "get_weight_adjust"
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_AdjustWeightIndivAttnAdd',
+            display_name='Adjust Weight [Indiv-Attn◆Add] 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/ad settings/weight adjust',
+            inputs=[
+                io.Float.Input('pe_ADD', default=0.0, max=2.0, min=-2.0, step=1e-06),
+                io.Float.Input('attn_ADD', default=0.0, max=2.0, min=-2.0, step=1e-06),
+                io.Float.Input('attn_q_ADD', default=0.0, max=2.0, min=-2.0, step=1e-06),
+                io.Float.Input('attn_k_ADD', default=0.0, max=2.0, min=-2.0, step=1e-06),
+                io.Float.Input('attn_v_ADD', default=0.0, max=2.0, min=-2.0, step=1e-06),
+                io.Float.Input('attn_out_weight_ADD', default=0.0, max=2.0, min=-2.0, step=1e-06),
+                io.Float.Input('attn_out_bias_ADD', default=0.0, max=2.0, min=-2.0, step=1e-06),
+                io.Float.Input('other_ADD', default=0.0, max=2.0, min=-2.0, step=1e-06),
+                io.Boolean.Input('print_adjustment', default=False),
+                io.Custom("WEIGHT_ADJUST").Input('prev_weight_adjust', optional=True),
+            ],
+            outputs=[
+                io.Custom("WEIGHT_ADJUST").Output('WEIGHT_ADJUST'),
+            ],
+        )
 
-    def get_weight_adjust(self, pe_ADD: float, attn_ADD: float,
+
+    @classmethod
+    def execute(cls, pe_ADD: float, attn_ADD: float,
                           attn_q_ADD: float, attn_k_ADD: float, attn_v_ADD: float,
                           attn_out_weight_ADD: float, attn_out_bias_ADD: float,
-                          other_ADD: float, print_adjustment: bool, prev_weight_adjust: AdjustGroup=None):
+                          other_ADD: float, print_adjustment: bool, prev_weight_adjust: AdjustGroup=None) -> io.NodeOutput:
         if prev_weight_adjust is None:
             prev_weight_adjust = AdjustGroup()
         prev_weight_adjust = prev_weight_adjust.clone()
@@ -276,37 +296,39 @@ class WeightAdjustIndivAttnAddNode:
             print_adjustment=print_adjustment
         )
         prev_weight_adjust.add(adjust)
-        return (prev_weight_adjust,)
+        return io.NodeOutput(prev_weight_adjust)
 
 
-class WeightAdjustIndivAttnMultNode:
+class WeightAdjustIndivAttnMultNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "pe_MULT": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 2.0, "step": 0.000001}),
-                "attn_MULT": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 2.0, "step": 0.000001}),
-                "attn_q_MULT": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 2.0, "step": 0.000001}),
-                "attn_k_MULT": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 2.0, "step": 0.000001}),
-                "attn_v_MULT": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 2.0, "step": 0.000001}),
-                "attn_out_weight_MULT": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 2.0, "step": 0.000001}),
-                "attn_out_bias_MULT": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 2.0, "step": 0.000001}),
-                "other_MULT": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 2.0, "step": 0.000001}),
-                "print_adjustment": ("BOOLEAN", {"default": False}),
-            },
-            "optional": {
-                "prev_weight_adjust": ("WEIGHT_ADJUST",),
-            },
-        }
-    
-    RETURN_TYPES = ("WEIGHT_ADJUST",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/ad settings/weight adjust"
-    FUNCTION = "get_weight_adjust"
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_AdjustWeightIndivAttnMult',
+            display_name='Adjust Weight [Indiv-Attn◆Mult] 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/ad settings/weight adjust',
+            inputs=[
+                io.Float.Input('pe_MULT', default=1.0, max=2.0, min=0.0, step=1e-06),
+                io.Float.Input('attn_MULT', default=1.0, max=2.0, min=0.0, step=1e-06),
+                io.Float.Input('attn_q_MULT', default=1.0, max=2.0, min=0.0, step=1e-06),
+                io.Float.Input('attn_k_MULT', default=1.0, max=2.0, min=0.0, step=1e-06),
+                io.Float.Input('attn_v_MULT', default=1.0, max=2.0, min=0.0, step=1e-06),
+                io.Float.Input('attn_out_weight_MULT', default=1.0, max=2.0, min=0.0, step=1e-06),
+                io.Float.Input('attn_out_bias_MULT', default=1.0, max=2.0, min=0.0, step=1e-06),
+                io.Float.Input('other_MULT', default=1.0, max=2.0, min=0.0, step=1e-06),
+                io.Boolean.Input('print_adjustment', default=False),
+                io.Custom("WEIGHT_ADJUST").Input('prev_weight_adjust', optional=True),
+            ],
+            outputs=[
+                io.Custom("WEIGHT_ADJUST").Output('WEIGHT_ADJUST'),
+            ],
+        )
 
-    def get_weight_adjust(self, pe_MULT: float, attn_MULT: float,
+
+    @classmethod
+    def execute(cls, pe_MULT: float, attn_MULT: float,
                           attn_q_MULT: float, attn_k_MULT: float, attn_v_MULT: float,
                           attn_out_weight_MULT: float, attn_out_bias_MULT: float,
-                          other_MULT: float, print_adjustment: bool, prev_weight_adjust: AdjustGroup=None):
+                          other_MULT: float, print_adjustment: bool, prev_weight_adjust: AdjustGroup=None) -> io.NodeOutput:
         if prev_weight_adjust is None:
             prev_weight_adjust = AdjustGroup()
         prev_weight_adjust = prev_weight_adjust.clone()
@@ -322,4 +344,4 @@ class WeightAdjustIndivAttnMultNode:
             print_adjustment=print_adjustment
         )
         prev_weight_adjust.add(adjust)
-        return (prev_weight_adjust,)
+        return io.NodeOutput(prev_weight_adjust)

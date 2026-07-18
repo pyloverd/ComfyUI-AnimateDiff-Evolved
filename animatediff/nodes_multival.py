@@ -4,6 +4,8 @@ from typing import Union
 import torch
 from torch import Tensor
 
+from comfy_api.latest import io
+
 from .utils_motion import create_multival_combo, linear_conversion, normalize_min_max, extend_to_batch_size, extend_list_to_batch_size
 
 
@@ -13,45 +15,33 @@ class ScaleType:
     LIST = [ABSOLUTE, RELATIVE]
 
 
-class MultivalDynamicNode:
+class MultivalDynamicNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "float_val": ("FLOAT", {"default": 1.0, "min": 0.0, "step": 0.001},),
-            },
-            "optional": {
-                "mask_optional": ("MASK",),
-            },
-        }
-    
-    RETURN_TYPES = ("MULTIVAL",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/multival"
-    FUNCTION = "create_multival"
-
-    def create_multival(self, float_val: Union[float, list[float]]=1.0, mask_optional: Tensor=None):
-        return (create_multival_combo(float_val=float_val, mask_optional=mask_optional),)
-
-
-class MultivalScaledMaskNode:
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_MultivalDynamic',
+            display_name='Multival 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/multival',
+            inputs=[io.Float.Input('float_val', default=1.0, min=0.0, step=0.001), io.Mask.Input('mask_optional', optional=True)],
+            outputs=[io.Custom('MULTIVAL').Output('MULTIVAL')]
+        )
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "min_float_val": ("FLOAT", {"default": 0.0, "min": 0.0, "step": 0.001}),
-                "max_float_val": ("FLOAT", {"default": 1.0, "min": 0.0, "step": 0.001}),
-                "mask": ("MASK",),
-            },
-            "optional": {
-                "scaling": (ScaleType.LIST,),
-            },
-        }
+    def execute(cls, float_val: Union[float, list[float]]=1.0, mask_optional: Tensor=None):
+        return io.NodeOutput(create_multival_combo(float_val=float_val, mask_optional=mask_optional))
 
-    RETURN_TYPES = ("MULTIVAL",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/multival"
-    FUNCTION = "create_multival"
 
-    def create_multival(self, min_float_val: float, max_float_val: float, mask: Tensor, scaling: str=ScaleType.ABSOLUTE):
+class MultivalScaledMaskNode(io.ComfyNode):
+    @classmethod
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_MultivalScaledMask',
+            display_name='Multival Scaled Mask 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/multival',
+            inputs=[io.Float.Input('min_float_val', default=0.0, min=0.0, step=0.001), io.Float.Input('max_float_val', default=1.0, min=0.0, step=0.001), io.Mask.Input('mask'), io.Combo.Input('scaling', options=['absolute', 'relative'] , optional=True)],
+            outputs=[io.Custom('MULTIVAL').Output('MULTIVAL')]
+        )
+    @classmethod
+    def execute(cls, min_float_val: float, max_float_val: float, mask: Tensor, scaling: str=ScaleType.ABSOLUTE):
         lengths = [mask.shape[0]]
         iterable_inputs = [False, False]
         val_inputs = [min_float_val, max_float_val]
@@ -77,84 +67,55 @@ class MultivalScaledMaskNode:
             mask = normalize_min_max(mask.clone(), new_min=min_float_val, new_max=max_float_val)
         else:
             raise ValueError(f"scaling '{scaling}' not recognized.")
-        return MultivalDynamicNode.create_multival(self, mask_optional=mask)
+        return io.NodeOutput(*MultivalDynamicNode.execute(mask_optional=mask).args)
 
 
-class MultivalDynamicFloatInputNode:
+class MultivalDynamicFloatInputNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "float_val": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.001, "forceInput": True},),
-            },
-            "optional": {
-                "mask_optional": ("MASK",),
-            },
-        }
-    
-    RETURN_TYPES = ("MULTIVAL",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/multival"
-    FUNCTION = "create_multival"
-
-    def create_multival(self, float_val: Union[float, list[float]]=None, mask_optional: Tensor=None):
-        return MultivalDynamicNode.create_multival(self, float_val=float_val, mask_optional=mask_optional)
-
-
-class MultivalDynamicFloatsNode:
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_MultivalDynamicFloatInput',
+            display_name='Multival [Float List] 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/multival',
+            inputs=[io.Float.Input('float_val', default=1.0, force_input=True, max=10.0, min=0.0, step=0.001), io.Mask.Input('mask_optional', optional=True)],
+            outputs=[io.Custom('MULTIVAL').Output('MULTIVAL')]
+        )
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "floats": ("FLOATS", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.001},),
-            },
-            "optional": {
-                "mask_optional": ("MASK",),
-            },
-        }
-    
-    RETURN_TYPES = ("MULTIVAL",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/multival"
-    FUNCTION = "create_multival"
-
-    def create_multival(self, floats: Union[float, list[float]]=None, mask_optional: Tensor=None):
-        return MultivalDynamicNode.create_multival(self, float_val=floats, mask_optional=mask_optional)
+    def execute(cls, float_val: Union[float, list[float]]=None, mask_optional: Tensor=None):
+        return io.NodeOutput(*MultivalDynamicNode.execute(float_val=float_val, mask_optional=mask_optional).args)
 
 
-class MultivalFloatNode:
+class MultivalDynamicFloatsNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "float_val": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.001},),
-            },
-        }
-    
-    RETURN_TYPES = ("MULTIVAL",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/multival"
-    FUNCTION = "create_multival"
-
-    def create_multival(self, float_val: Union[float, list[float]]=None):
-        return MultivalDynamicNode.create_multival(self, float_val=float_val)
-
-
-class MultivalConvertToMaskNode:
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_MultivalDynamicFloats',
+            display_name='Multival [Floats] 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/multival',
+            inputs=[io.Custom('FLOATS').Input('floats', extra_dict={'default': 1.0, 'min': 0.0, 'max': 10.0, 'step': 0.001}), io.Mask.Input('mask_optional', optional=True)],
+            outputs=[io.Custom('MULTIVAL').Output('MULTIVAL')]
+        )
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "multival": ("MULTIVAL",),
-            },
-        }
-    
-    RETURN_TYPES = ("MASK",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/multival"
-    FUNCTION = "convert_multival_to_mask"
+    def execute(cls, floats: Union[float, list[float]]=None, mask_optional: Tensor=None):
+        return io.NodeOutput(*MultivalDynamicNode.execute(float_val=floats, mask_optional=mask_optional).args)
 
-    def convert_multival_to_mask(self, multival: Union[float, Tensor]):
+
+class MultivalConvertToMaskNode(io.ComfyNode):
+    @classmethod
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_MultivalConvertToMask',
+            display_name='Multival to Mask 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/multival',
+            inputs=[io.Custom('MULTIVAL').Input('multival')],
+            outputs=[io.Mask.Output('MASK')]
+        )
+    @classmethod
+    def execute(cls, multival: Union[float, Tensor]):
         # if already tensor, assume is a valid mask
         if type(multival) == Tensor:
-            return (multival,)
+            return io.NodeOutput(multival)
         # otherwise, make a single 1x1 mask with the proper value
         shape = (1,1,1)
         converted_multival = torch.ones(shape) * multival
-        return (converted_multival,)
+        return io.NodeOutput(converted_multival)

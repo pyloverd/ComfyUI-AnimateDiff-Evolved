@@ -1,3 +1,4 @@
+from comfy_api.latest import io
 from typing import Union
 import os
 import torch
@@ -218,38 +219,40 @@ def poses_to_ndarray(poses: list[list[float]]) -> np.ndarray:
     return RT
 
 
-class ApplyAnimateDiffWithCameraCtrl:
+class ApplyAnimateDiffWithCameraCtrl(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "motion_model": ("MOTION_MODEL_ADE",),
-                "cameractrl_poses": ("CAMERACTRL_POSES",),
-                "start_percent": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.001}),
-                "end_percent": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.001}),
-            },
-            "optional": {
-                "motion_lora": ("MOTION_LORA",),
-                "scale_multival": ("MULTIVAL",),
-                "effect_multival": ("MULTIVAL",),
-                "cameractrl_multival": ("MULTIVAL",),
-                "ad_keyframes": ("AD_KEYFRAMES",),
-                "prev_m_models": ("M_MODELS",),
-                "per_block": ("PER_BLOCK",),
-            }
-        }
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_ApplyAnimateDiffModelWithCameraCtrl',
+            display_name='Apply AnimateDiff+CameraCtrl Model 🎭🅐🅓②',
+            category='Animate Diff 🎭🅐🅓/② Gen2 nodes ②/CameraCtrl',
+            inputs=[
+                io.Custom("MOTION_MODEL_ADE").Input('motion_model'),
+                io.Custom("CAMERACTRL_POSES").Input('cameractrl_poses'),
+                io.Float.Input('start_percent', default=0.0, max=1.0, min=0.0, step=0.001),
+                io.Float.Input('end_percent', default=1.0, max=1.0, min=0.0, step=0.001),
+                io.Custom("MOTION_LORA").Input('motion_lora', optional=True),
+                io.Custom("MULTIVAL").Input('scale_multival', optional=True),
+                io.Custom("MULTIVAL").Input('effect_multival', optional=True),
+                io.Custom("MULTIVAL").Input('cameractrl_multival', optional=True),
+                io.Custom("AD_KEYFRAMES").Input('ad_keyframes', optional=True),
+                io.Custom("M_MODELS").Input('prev_m_models', optional=True),
+                io.Custom("PER_BLOCK").Input('per_block', optional=True),
+            ],
+            outputs=[
+                io.Custom("M_MODELS").Output('M_MODELS'),
+            ],
+        )
     
-    RETURN_TYPES = ("M_MODELS",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/② Gen2 nodes ②/CameraCtrl"
-    FUNCTION = "apply_motion_model"
 
-    def apply_motion_model(self, motion_model: MotionModelPatcher, cameractrl_poses: list[list[float]], start_percent: float=0.0, end_percent: float=1.0,
+    @classmethod
+    def execute(cls, motion_model: MotionModelPatcher, cameractrl_poses: list[list[float]], start_percent: float=0.0, end_percent: float=1.0,
                            motion_lora: MotionLoraList=None, ad_keyframes: ADKeyframeGroup=None,
                            scale_multival=None, effect_multival=None, cameractrl_multival=None, per_block=None,
                            prev_m_models: MotionModelGroup=None,):
-        new_m_models = ApplyAnimateDiffModelNode.apply_motion_model(self, motion_model, start_percent=start_percent, end_percent=end_percent,
+        new_m_models = ApplyAnimateDiffModelNode.execute( motion_model, start_percent=start_percent, end_percent=end_percent,
                                                                     motion_lora=motion_lora, ad_keyframes=ad_keyframes, per_block=per_block,
-                                                                    scale_multival=scale_multival, effect_multival=effect_multival, prev_m_models=prev_m_models)
+                                                                    scale_multival=scale_multival, effect_multival=effect_multival, prev_m_models=prev_m_models).args
         # most recent added model will always be first in list;
         curr_model = new_m_models[0].models[0]
         # confirm that model contains camera_encoder
@@ -259,84 +262,88 @@ class ApplyAnimateDiffWithCameraCtrl:
         attachment = get_mm_attachment(curr_model)
         attachment.orig_camera_entries = camera_entries
         attachment.cameractrl_multival = cameractrl_multival
-        return new_m_models
+        return io.NodeOutput(*new_m_models)
 
 
-class LoadAnimateDiffModelWithCameraCtrl:
+class LoadAnimateDiffModelWithCameraCtrl(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "model_name": (get_available_motion_models(),),
-                "camera_ctrl": (get_available_motion_models(),),
-            },
-            "optional": {
-                "ad_settings": ("AD_SETTINGS",),
-            }
-        }
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_LoadAnimateDiffModelWithCameraCtrl',
+            display_name='Load AnimateDiff+CameraCtrl Model 🎭🅐🅓②',
+            category='Animate Diff 🎭🅐🅓/② Gen2 nodes ②/CameraCtrl',
+            inputs=[
+                io.Combo.Input('model_name', options=get_available_motion_models()),
+                io.Combo.Input('camera_ctrl', options=get_available_motion_models()),
+                io.Custom("AD_SETTINGS").Input('ad_settings', optional=True),
+            ],
+            outputs=[
+                io.Custom("MOTION_MODEL_ADE").Output('MOTION_MODEL'),
+            ],
+        )
 
-    RETURN_TYPES = ("MOTION_MODEL_ADE",)
-    RETURN_NAMES = ("MOTION_MODEL",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/② Gen2 nodes ②/CameraCtrl"
-    FUNCTION = "load_camera_ctrl"
 
-    def load_camera_ctrl(self, model_name: str, camera_ctrl: str, ad_settings: AnimateDiffSettings=None):
+    @classmethod
+    def execute(cls, model_name: str, camera_ctrl: str, ad_settings: AnimateDiffSettings=None):
         loaded_motion_model = load_motion_module_gen2(model_name=model_name, motion_model_settings=ad_settings)
         inject_camera_encoder_into_model(motion_model=loaded_motion_model, camera_ctrl_name=camera_ctrl)
-        return (loaded_motion_model,)
+        return io.NodeOutput(loaded_motion_model,)
 
 
-class CameraCtrlADKeyframeNode:
+class CameraCtrlADKeyframeNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "start_percent": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.001}, ),
-            },
-            "optional": {
-                "prev_ad_keyframes": ("AD_KEYFRAMES", ),
-                "scale_multival": ("MULTIVAL",),
-                "effect_multival": ("MULTIVAL",),
-                "cameractrl_multival": ("MULTIVAL",),
-                "inherit_missing": ("BOOLEAN", {"default": True}, ),
-                "guarantee_steps": ("INT", {"default": 1, "min": 0, "max": BIGMAX}),
-            },
-        }
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_CameraCtrlAnimateDiffKeyframe',
+            display_name='AnimateDiff+CameraCtrl Keyframe 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/② Gen2 nodes ②/CameraCtrl',
+            inputs=[
+                io.Float.Input('start_percent', default=0.0, max=1.0, min=0.0, step=0.001),
+                io.Custom("AD_KEYFRAMES").Input('prev_ad_keyframes', optional=True),
+                io.Custom("MULTIVAL").Input('scale_multival', optional=True),
+                io.Custom("MULTIVAL").Input('effect_multival', optional=True),
+                io.Custom("MULTIVAL").Input('cameractrl_multival', optional=True),
+                io.Boolean.Input('inherit_missing', optional=True, default=True),
+                io.Int.Input('guarantee_steps', optional=True, default=1, max=9007199254740991, min=0),
+            ],
+            outputs=[
+                io.Custom("AD_KEYFRAMES").Output('AD_KEYFRAMES'),
+            ],
+        )
     
-    RETURN_TYPES = ("AD_KEYFRAMES", )
-    FUNCTION = "load_keyframe"
 
-    CATEGORY = "Animate Diff 🎭🅐🅓/② Gen2 nodes ②/CameraCtrl"
 
-    def load_keyframe(self,
+    @classmethod
+    def execute(cls,
                       start_percent: float, prev_ad_keyframes=None,
                       scale_multival: Union[float, torch.Tensor]=None, effect_multival: Union[float, torch.Tensor]=None,
                       cameractrl_multival: Union[float, torch.Tensor]=None,
                       inherit_missing: bool=True, guarantee_steps: int=1):
-        return ADKeyframeNode.load_keyframe(self,
+        return io.NodeOutput(*ADKeyframeNode.execute(
                     start_percent=start_percent, prev_ad_keyframes=prev_ad_keyframes,
                     scale_multival=scale_multival, effect_multival=effect_multival, cameractrl_multival=cameractrl_multival,
                     inherit_missing=inherit_missing, guarantee_steps=guarantee_steps
-                )
+                ).args)
 
 
-class LoadCameraPosesFromFile:
+class LoadCameraPosesFromFile(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        input_dir = folder_paths.get_input_directory()
-        files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
-        files = [f for f in files if f.endswith(".txt")]
-        return {
-            "required": {
-                "pose_filename": (sorted(files),),
-            }
-        }
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_LoadCameraPoses',
+            display_name='Load CameraCtrl Poses (File) 🎭🅐🅓②',
+            category='Animate Diff 🎭🅐🅓/② Gen2 nodes ②/CameraCtrl/poses',
+            inputs=[
+                io.Combo.Input('pose_filename', options=sorted(f for f in os.listdir(folder_paths.get_input_directory()) if os.path.isfile(os.path.join(folder_paths.get_input_directory(), f)) and f.endswith(".txt"))),
+            ],
+            outputs=[
+                io.Custom("CAMERACTRL_POSES").Output('CAMERACTRL_POSES'),
+            ],
+        )
 
-    RETURN_TYPES = ("CAMERACTRL_POSES",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/② Gen2 nodes ②/CameraCtrl/poses"
-    FUNCTION = "load_camera_poses"
 
-    def load_camera_poses(self, pose_filename: str):
+    @classmethod
+    def execute(cls, pose_filename: str):
         file_path = folder_paths.get_annotated_filepath(pose_filename)
         with open(file_path, 'r') as f:
             poses = f.readlines()
@@ -345,36 +352,40 @@ class LoadCameraPosesFromFile:
         poses = [pose.strip().split(' ') for pose in poses[1:]]
         poses = [[float(x) for x in pose] for pose in poses]
         poses = set_original_pose_dims(poses, pose_width=CAM.DEFAULT_POSE_WIDTH, pose_height=CAM.DEFAULT_POSE_HEIGHT)
-        return (poses,)
+        return io.NodeOutput(poses,)
     
 
-class LoadCameraPosesFromPath:
+class LoadCameraPosesFromPath(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "optional": {
-                "file_path": ("STRING", {"default": "X://path/to/pose_file.txt"}),
-            }
-        }
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_LoadCameraPosesFromPath',
+            display_name='Load CameraCtrl Poses (Path) 🎭🅐🅓②',
+            category='Animate Diff 🎭🅐🅓/② Gen2 nodes ②/CameraCtrl/poses',
+            inputs=[
+                io.String.Input('file_path', optional=True, default='X://path/to/pose_file.txt'),
+            ],
+            outputs=[
+                io.Custom("CAMERACTRL_POSES").Output('CAMERACTRL_POSES'),
+            ],
+        )
     
     @classmethod
-    def IS_CHANGED(s, file_path, **kwargs):
+    def fingerprint_inputs(cls, file_path, **kwargs):
         if Path(file_path).is_file():
             return calculate_file_hash(strip_path(file_path))
         return False
     
     @classmethod
-    def VALIDATE_INPUTS(s, file_path, **kwargs):
+    def validate_inputs(cls, file_path, **kwargs):
         # This function never gets ran for some reason, I don't care enough to figure out why right now.
         if not Path(strip_path(file_path)).is_file():
             return f"Pose file not found: {file_path}"
         return True
 
-    RETURN_TYPES = ("CAMERACTRL_POSES",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/② Gen2 nodes ②/CameraCtrl/poses"
-    FUNCTION = "load_camera_poses"
 
-    def load_camera_poses(self, file_path: str):
+    @classmethod
+    def execute(cls, file_path: str):
         file_path = strip_path(file_path)
         if not Path(file_path).is_file():
             raise Exception(f"Pose file not found: {file_path}")
@@ -385,60 +396,64 @@ class LoadCameraPosesFromPath:
         poses = [pose.strip().split(' ') for pose in poses[1:]]
         poses = [[float(x) for x in pose] for pose in poses]
         poses = set_original_pose_dims(poses, pose_width=CAM.DEFAULT_POSE_WIDTH, pose_height=CAM.DEFAULT_POSE_HEIGHT)
-        return (poses,)
+        return io.NodeOutput(poses,)
 
 
-class CameraCtrlPoseBasic:
+class CameraCtrlPoseBasic(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "motion_type": (CAM._LIST,),
-                "speed": ("FLOAT", {"default": 1.0, "min": -100.0, "max": 100.0, "step": 0.01}),
-                "frame_length": ("INT", {"default": 16}),
-            },
-            "optional": {
-                "prev_poses": ("CAMERACTRL_POSES",),
-            },
-        }
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_CameraPoseBasic',
+            display_name='Create CameraCtrl Poses 🎭🅐🅓②',
+            category='Animate Diff 🎭🅐🅓/② Gen2 nodes ②/CameraCtrl/poses',
+            inputs=[
+                io.Combo.Input('motion_type', options=['Static', 'Pan Up', 'Pan Down', 'Pan Left', 'Pan Right', 'Zoom In', 'Zoom Out', 'Roll Clockwise', 'Roll Anticlockwise', 'Tilt Down', 'Tilt Up', 'Tilt Left', 'Tilt Right']),
+                io.Float.Input('speed', default=1.0, max=100.0, min=-100.0, step=0.01),
+                io.Int.Input('frame_length', default=16),
+                io.Custom("CAMERACTRL_POSES").Input('prev_poses', optional=True),
+            ],
+            outputs=[
+                io.Custom("CAMERACTRL_POSES").Output('CAMERACTRL_POSES'),
+            ],
+        )
 
-    RETURN_TYPES = ("CAMERACTRL_POSES",)
-    FUNCTION = "camera_pose_basic"
-    CATEGORY = "Animate Diff 🎭🅐🅓/② Gen2 nodes ②/CameraCtrl/poses"
 
-    def camera_pose_basic(self, motion_type: str, speed: float, frame_length: int, prev_poses: list[list[float]]=None):
+    @classmethod
+    def execute(cls, motion_type: str, speed: float, frame_length: int, prev_poses: list[list[float]]=None):
         motion = CAM.get(motion_type)
         RT = get_camera_motion(motion.rotate, motion.translate, speed, frame_length)
         new_motion = ndarray_to_poses(RT=RT)
         if prev_poses is not None:
             new_motion = combine_poses(prev_poses, new_motion)
-        return (new_motion,)
+        return io.NodeOutput(new_motion,)
 
 
-class CameraCtrlPoseCombo:
+class CameraCtrlPoseCombo(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "motion_type1": (CAM._LIST,),
-                "motion_type2": (CAM._LIST,),
-                "motion_type3": (CAM._LIST,),
-                "motion_type4": (CAM._LIST,),
-                "motion_type5": (CAM._LIST,),
-                "motion_type6": (CAM._LIST,),
-                "speed": ("FLOAT", {"default": 1.0, "min": -100.0, "max": 100.0, "step": 0.01}),
-                "frame_length": ("INT", {"default": 16}),
-            },
-            "optional": {
-                "prev_poses": ("CAMERACTRL_POSES",),
-            }
-        }
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_CameraPoseCombo',
+            display_name='Create CameraCtrl Poses (Combo) 🎭🅐🅓②',
+            category='Animate Diff 🎭🅐🅓/② Gen2 nodes ②/CameraCtrl/poses',
+            inputs=[
+                io.Combo.Input('motion_type1', options=['Static', 'Pan Up', 'Pan Down', 'Pan Left', 'Pan Right', 'Zoom In', 'Zoom Out', 'Roll Clockwise', 'Roll Anticlockwise', 'Tilt Down', 'Tilt Up', 'Tilt Left', 'Tilt Right']),
+                io.Combo.Input('motion_type2', options=['Static', 'Pan Up', 'Pan Down', 'Pan Left', 'Pan Right', 'Zoom In', 'Zoom Out', 'Roll Clockwise', 'Roll Anticlockwise', 'Tilt Down', 'Tilt Up', 'Tilt Left', 'Tilt Right']),
+                io.Combo.Input('motion_type3', options=['Static', 'Pan Up', 'Pan Down', 'Pan Left', 'Pan Right', 'Zoom In', 'Zoom Out', 'Roll Clockwise', 'Roll Anticlockwise', 'Tilt Down', 'Tilt Up', 'Tilt Left', 'Tilt Right']),
+                io.Combo.Input('motion_type4', options=['Static', 'Pan Up', 'Pan Down', 'Pan Left', 'Pan Right', 'Zoom In', 'Zoom Out', 'Roll Clockwise', 'Roll Anticlockwise', 'Tilt Down', 'Tilt Up', 'Tilt Left', 'Tilt Right']),
+                io.Combo.Input('motion_type5', options=['Static', 'Pan Up', 'Pan Down', 'Pan Left', 'Pan Right', 'Zoom In', 'Zoom Out', 'Roll Clockwise', 'Roll Anticlockwise', 'Tilt Down', 'Tilt Up', 'Tilt Left', 'Tilt Right']),
+                io.Combo.Input('motion_type6', options=['Static', 'Pan Up', 'Pan Down', 'Pan Left', 'Pan Right', 'Zoom In', 'Zoom Out', 'Roll Clockwise', 'Roll Anticlockwise', 'Tilt Down', 'Tilt Up', 'Tilt Left', 'Tilt Right']),
+                io.Float.Input('speed', default=1.0, max=100.0, min=-100.0, step=0.01),
+                io.Int.Input('frame_length', default=16),
+                io.Custom("CAMERACTRL_POSES").Input('prev_poses', optional=True),
+            ],
+            outputs=[
+                io.Custom("CAMERACTRL_POSES").Output('CAMERACTRL_POSES'),
+            ],
+        )
 
-    RETURN_TYPES = ("CAMERACTRL_POSES",)
-    FUNCTION = "camera_pose_combo"
-    CATEGORY = "Animate Diff 🎭🅐🅓/② Gen2 nodes ②/CameraCtrl/poses"
 
-    def camera_pose_combo(self,
+    @classmethod
+    def execute(cls,
                           motion_type1: str, motion_type2: str, motion_type3: str,
                           motion_type4: str, motion_type5: str, motion_type6: str,
                           speed: float, frame_length: int,
@@ -452,88 +467,98 @@ class CameraCtrlPoseCombo:
         new_motion = ndarray_to_poses(RT=RT)
         if prev_poses is not None:
             new_motion = combine_poses(prev_poses, new_motion)
-        return (new_motion,)
+        return io.NodeOutput(new_motion,)
 
 
-class CameraCtrlPoseAdvanced:
+class CameraCtrlPoseAdvanced(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "motion_type1": (CAM._LIST,),
-                "strength1": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.01}),
-                "motion_type2": (CAM._LIST,),
-                "strength2": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.01}),
-                "motion_type3": (CAM._LIST,),
-                "strength3": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.01}),
-                "motion_type4": (CAM._LIST,),
-                "strength4": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.01}),
-                "motion_type5": (CAM._LIST,),
-                "strength5": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.01}),
-                "motion_type6": (CAM._LIST,),
-                "strength6": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.01}),
-                "speed": ("FLOAT", {"default": 1.0, "min": -100.0, "max": 100.0, "step": 0.01}),
-                "frame_length": ("INT", {"default": 16}),
-            },
-            "optional": {
-                "prev_poses": ("CAMERACTRL_POSES",),
-            }
-        }
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_CameraPoseAdvanced',
+            display_name='Create CameraCtrl Poses (Adv.) 🎭🅐🅓②',
+            category='Animate Diff 🎭🅐🅓/② Gen2 nodes ②/CameraCtrl/poses',
+            inputs=[
+                io.Combo.Input('motion_type1', options=['Static', 'Pan Up', 'Pan Down', 'Pan Left', 'Pan Right', 'Zoom In', 'Zoom Out', 'Roll Clockwise', 'Roll Anticlockwise', 'Tilt Down', 'Tilt Up', 'Tilt Left', 'Tilt Right']),
+                io.Float.Input('strength1', default=1.0, max=10.0, min=0.0, step=0.01),
+                io.Combo.Input('motion_type2', options=['Static', 'Pan Up', 'Pan Down', 'Pan Left', 'Pan Right', 'Zoom In', 'Zoom Out', 'Roll Clockwise', 'Roll Anticlockwise', 'Tilt Down', 'Tilt Up', 'Tilt Left', 'Tilt Right']),
+                io.Float.Input('strength2', default=1.0, max=10.0, min=0.0, step=0.01),
+                io.Combo.Input('motion_type3', options=['Static', 'Pan Up', 'Pan Down', 'Pan Left', 'Pan Right', 'Zoom In', 'Zoom Out', 'Roll Clockwise', 'Roll Anticlockwise', 'Tilt Down', 'Tilt Up', 'Tilt Left', 'Tilt Right']),
+                io.Float.Input('strength3', default=1.0, max=10.0, min=0.0, step=0.01),
+                io.Combo.Input('motion_type4', options=['Static', 'Pan Up', 'Pan Down', 'Pan Left', 'Pan Right', 'Zoom In', 'Zoom Out', 'Roll Clockwise', 'Roll Anticlockwise', 'Tilt Down', 'Tilt Up', 'Tilt Left', 'Tilt Right']),
+                io.Float.Input('strength4', default=1.0, max=10.0, min=0.0, step=0.01),
+                io.Combo.Input('motion_type5', options=['Static', 'Pan Up', 'Pan Down', 'Pan Left', 'Pan Right', 'Zoom In', 'Zoom Out', 'Roll Clockwise', 'Roll Anticlockwise', 'Tilt Down', 'Tilt Up', 'Tilt Left', 'Tilt Right']),
+                io.Float.Input('strength5', default=1.0, max=10.0, min=0.0, step=0.01),
+                io.Combo.Input('motion_type6', options=['Static', 'Pan Up', 'Pan Down', 'Pan Left', 'Pan Right', 'Zoom In', 'Zoom Out', 'Roll Clockwise', 'Roll Anticlockwise', 'Tilt Down', 'Tilt Up', 'Tilt Left', 'Tilt Right']),
+                io.Float.Input('strength6', default=1.0, max=10.0, min=0.0, step=0.01),
+                io.Float.Input('speed', default=1.0, max=100.0, min=-100.0, step=0.01),
+                io.Int.Input('frame_length', default=16),
+                io.Custom("CAMERACTRL_POSES").Input('prev_poses', optional=True),
+            ],
+            outputs=[
+                io.Custom("CAMERACTRL_POSES").Output('CAMERACTRL_POSES'),
+            ],
+        )
 
-    RETURN_TYPES = ("CAMERACTRL_POSES",)
-    FUNCTION = "camera_pose_combo"
-    CATEGORY = "Animate Diff 🎭🅐🅓/② Gen2 nodes ②/CameraCtrl/poses"
 
-    def camera_pose_combo(self,
+    @classmethod
+    def execute(cls,
                           motion_type1: str, motion_type2: str, motion_type3: str,
                           motion_type4: str, motion_type5: str, motion_type6: str,
                           speed: float, frame_length: int,
                           prev_poses: list[list[float]]=None,
                           strength1=1.0, strength2=1.0, strength3=1.0, strength4=1.0, strength5=1.0, strength6=1.0):
-        return CameraCtrlPoseCombo.camera_pose_combo(self,
+        return io.NodeOutput(*CameraCtrlPoseCombo.execute(
                                                      motion_type1=motion_type1, motion_type2=motion_type2, motion_type3=motion_type3,
                                                      motion_type4=motion_type4, motion_type5=motion_type5, motion_type6=motion_type6,
                                                      speed=speed, frame_length=frame_length, prev_poses=prev_poses,
                                                      strength1=strength1, strength2=strength2, strength3=strength3,
-                                                     strength4=strength4, strength5=strength5, strength6=strength6)
+                                                     strength4=strength4, strength5=strength5, strength6=strength6).args)
 
 
-class CameraCtrlManualAppendPose:
+class CameraCtrlManualAppendPose(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "poses_first": ("CAMERACTRL_POSES",),
-                "poses_last": ("CAMERACTRL_POSES",),
-            }
-        }
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_CameraManualPoseAppend',
+            display_name='Manual Append CameraCtrl Poses 🎭🅐🅓②',
+            category='Animate Diff 🎭🅐🅓/② Gen2 nodes ②/CameraCtrl/poses',
+            inputs=[
+                io.Custom("CAMERACTRL_POSES").Input('poses_first'),
+                io.Custom("CAMERACTRL_POSES").Input('poses_last'),
+            ],
+            outputs=[
+                io.Custom("CAMERACTRL_POSES").Output('CAMERACTRL_POSES'),
+            ],
+        )
     
-    RETURN_TYPES = ("CAMERACTRL_POSES",)
-    FUNCTION = "camera_manual_append"
-    CATEGORY = "Animate Diff 🎭🅐🅓/② Gen2 nodes ②/CameraCtrl/poses"
 
-    def camera_manual_append(self, poses_first: list[list[float]], poses_last: list[list[float]]):
-        return (combine_poses(poses0=poses_first, poses1=poses_last),)
-
-
-class CameraCtrlReplaceCameraParameters:
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "poses":("CAMERACTRL_POSES",),
-                "fx": ("FLOAT", {"default": CAM.DEFAULT_FX, "min": 0, "max": 1, "step": 0.000000001}),
-                "fy": ("FLOAT", {"default": CAM.DEFAULT_FY, "min": 0, "max": 1, "step": 0.000000001}),
-                "cx": ("FLOAT", {"default": CAM.DEFAULT_CX, "min": 0, "max": 1, "step": 0.01}),
-                "cy": ("FLOAT", {"default": CAM.DEFAULT_CY, "min": 0, "max": 1, "step": 0.01}),
-            },
-        }
-    
-    RETURN_TYPES = ("CAMERACTRL_POSES",)
-    FUNCTION = "set_camera_parameters"
-    CATEGORY = "Animate Diff 🎭🅐🅓/② Gen2 nodes ②/CameraCtrl/poses"
+    def execute(cls, poses_first: list[list[float]], poses_last: list[list[float]]):
+        return io.NodeOutput(combine_poses(poses0=poses_first, poses1=poses_last),)
 
-    def set_camera_parameters(self, poses: list[list[float]], fx: float, fy: float, cx: float, cy: float):
+
+class CameraCtrlReplaceCameraParameters(io.ComfyNode):
+    @classmethod
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_ReplaceCameraParameters',
+            display_name='Replace Camera Parameters 🎭🅐🅓②',
+            category='Animate Diff 🎭🅐🅓/② Gen2 nodes ②/CameraCtrl/poses',
+            inputs=[
+                io.Custom("CAMERACTRL_POSES").Input('poses'),
+                io.Float.Input('fx', default=0.474812461, max=1, min=0, step=1e-09),
+                io.Float.Input('fy', default=0.844111024, max=1, min=0, step=1e-09),
+                io.Float.Input('cx', default=0.5, max=1, min=0, step=0.01),
+                io.Float.Input('cy', default=0.5, max=1, min=0, step=0.01),
+            ],
+            outputs=[
+                io.Custom("CAMERACTRL_POSES").Output('CAMERACTRL_POSES'),
+            ],
+        )
+    
+
+    @classmethod
+    def execute(cls, poses: list[list[float]], fx: float, fy: float, cx: float, cy: float):
         new_poses = copy.deepcopy(poses)
         for pose in new_poses:
             # fx,fy,cx,fy are in indexes 1-4 of the 19-long pose list
@@ -541,23 +566,27 @@ class CameraCtrlReplaceCameraParameters:
             pose[2] = fy
             pose[3] = cx
             pose[4] = cy
-        return (new_poses,)
+        return io.NodeOutput(new_poses,)
 
 
-class CameraCtrlSetOriginalAspectRatio:
+class CameraCtrlSetOriginalAspectRatio(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "poses":("CAMERACTRL_POSES",),
-                "orig_pose_width": ("INT", {"default": 1280, "min": 1, "max": BIGMAX}),
-                "orig_pose_height": ("INT", {"default": 720, "min": 1, "max": BIGMAX}),
-            }
-        }
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_ReplaceOriginalPoseAspectRatio',
+            display_name='Replace Orig. Pose Aspect Ratio 🎭🅐🅓②',
+            category='Animate Diff 🎭🅐🅓/② Gen2 nodes ②/CameraCtrl/poses',
+            inputs=[
+                io.Custom("CAMERACTRL_POSES").Input('poses'),
+                io.Int.Input('orig_pose_width', default=1280, max=9007199254740991, min=1),
+                io.Int.Input('orig_pose_height', default=720, max=9007199254740991, min=1),
+            ],
+            outputs=[
+                io.Custom("CAMERACTRL_POSES").Output('CAMERACTRL_POSES'),
+            ],
+        )
     
-    RETURN_TYPES = ("CAMERACTRL_POSES",)
-    FUNCTION = "set_aspect_ratio"
-    CATEGORY = "Animate Diff 🎭🅐🅓/② Gen2 nodes ②/CameraCtrl/poses"
 
-    def set_aspect_ratio(self, poses: list[list[float]], orig_pose_width: int, orig_pose_height: int):
-        return (set_original_pose_dims(poses, pose_width=orig_pose_width, pose_height=orig_pose_height),)
+    @classmethod
+    def execute(cls, poses: list[list[float]], orig_pose_width: int, orig_pose_height: int):
+        return io.NodeOutput(set_original_pose_dims(poses, pose_width=orig_pose_width, pose_height=orig_pose_height),)

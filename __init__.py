@@ -3,7 +3,7 @@ from .animatediff.logger import logger
 from .animatediff.utils_model import get_available_motion_models, Folders
 from .animatediff.model_injection import prepare_dinklink_register_definitions
 from .animatediff.motion_module_ad import prepare_dinklink_motion_module_ad
-from .animatediff.nodes import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
+from .animatediff.nodes import AnimateDiffExtension
 from .animatediff.dinklink import init_dinklink
 
 if len(get_available_motion_models()) == 0:
@@ -11,8 +11,12 @@ if len(get_available_motion_models()) == 0:
 
 WEB_DIRECTORY = "./web"
 
-__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
+__all__ = ["WEB_DIRECTORY"]
 
 init_dinklink()
 prepare_dinklink_register_definitions()
 prepare_dinklink_motion_module_ad()
+
+
+async def comfy_entrypoint() -> AnimateDiffExtension:
+    return AnimateDiffExtension()
