@@ -1,3 +1,4 @@
+from comfy_api.latest import io
 from typing import Union
 from torch import Tensor
 from collections.abc import Iterable
@@ -15,94 +16,95 @@ from .cfg_extras import perturbed_attention_guidance_patch, rescale_cfg_patch, s
 from .logger import logger
 
 
-class SampleSettingsNode:
+class SampleSettingsNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "batch_offset": ("INT", {"default": 0, "min": 0, "max": BIGMAX}),
-                "noise_type": (NoiseLayerType.LIST,),
-                "seed_gen": (SeedNoiseGeneration.LIST,),
-                "seed_offset": ("INT", {"default": 0, "min": BIGMIN, "max": BIGMAX}),
-            },
-            "optional": {
-                "noise_layers": ("NOISE_LAYERS",),
-                "iteration_opts": ("ITERATION_OPTS",),
-                "seed_override": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "forceInput": True}),
-                "adapt_denoise_steps": ("BOOLEAN", {"default": False},),
-                "custom_cfg": ("CUSTOM_CFG",),
-                "sigma_schedule": ("SIGMA_SCHEDULE",),
-                "image_inject": ("IMAGE_INJECT",),
-                "ancestral_opts": ("ANCESTRAL_OPTS",),
-                #"noise_calib": ("NOISE_CALIBRATION",), # TODO: bring back once NoiseCalibration is working
-            },
-        }
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_AnimateDiffSamplingSettings',
+            display_name='Sample Settings 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓',
+            inputs=[
+                io.Int.Input('batch_offset', default=0, max=9007199254740991, min=0),
+                io.Combo.Input('noise_type', options=NoiseLayerType.LIST),
+                io.Combo.Input('seed_gen', options=SeedNoiseGeneration.LIST),
+                io.Int.Input('seed_offset', default=0, max=9007199254740991, min=-9007199254740991),
+                io.Custom("NOISE_LAYERS").Input('noise_layers', optional=True),
+                io.Custom("ITERATION_OPTS").Input('iteration_opts', optional=True),
+                io.Int.Input('seed_override', optional=True, default=0, force_input=True, max=18446744073709551615, min=0),
+                io.Boolean.Input('adapt_denoise_steps', optional=True, default=False),
+                io.Custom("CUSTOM_CFG").Input('custom_cfg', optional=True),
+                io.Custom("SIGMA_SCHEDULE").Input('sigma_schedule', optional=True),
+                io.Custom("IMAGE_INJECT").Input('image_inject', optional=True),
+                io.Custom("ANCESTRAL_OPTS").Input('ancestral_opts', optional=True),
+            ],
+            outputs=[
+                io.Custom("SAMPLE_SETTINGS").Output('settings'),
+            ],
+        )
 
-    RETURN_TYPES = ("SAMPLE_SETTINGS",)
-    RETURN_NAMES = ("settings",)
-    CATEGORY = "Animate Diff 🎭🅐🅓"
-    FUNCTION = "create_settings"
 
-    def create_settings(self, batch_offset: int, noise_type: str, seed_gen: str, seed_offset: int, noise_layers: NoiseLayerGroup=None,
+    @classmethod
+    def execute(cls, batch_offset: int, noise_type: str, seed_gen: str, seed_offset: int, noise_layers: NoiseLayerGroup=None,
                         iteration_opts: IterationOptions=None, seed_override: int=None, adapt_denoise_steps=False,
                         custom_cfg: CustomCFGKeyframeGroup=None, sigma_schedule: SigmaSchedule=None, image_inject: NoisedImageToInjectGroup=None,
-                        noise_calib: NoiseCalibration=None, ancestral_opts=None):
+                        noise_calib: NoiseCalibration=None, ancestral_opts=None) -> io.NodeOutput:
         sampling_settings = SampleSettings(batch_offset=batch_offset, noise_type=noise_type, seed_gen=seed_gen, seed_offset=seed_offset, noise_layers=noise_layers,
                                            iteration_opts=iteration_opts, seed_override=seed_override, adapt_denoise_steps=adapt_denoise_steps,
                                            custom_cfg=custom_cfg, sigma_schedule=sigma_schedule, image_injection=image_inject, noise_calibration=noise_calib,
                                            ancestral_opts=ancestral_opts)
-        return (sampling_settings,)
+        return io.NodeOutput(sampling_settings,)
 
 
-class AncestralOptionsNode:
+class AncestralOptionsNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                #"batch_offset": ("INT", {"default": 0, "min": 0, "max": BIGMAX}),
-                "noise_type": (NoiseLayerType.LIST_ANCESTRAL,),
-                #"determinism": (NoiseDeterminism._LIST,),
-                "seed_offset": ("INT", {"default": 0, "min": BIGMIN, "max": BIGMAX}),
-                #"seed_gen_override": (SeedNoiseGeneration.LIST_WITH_OVERRIDE,),
-            },
-            "optional": {
-                "seed_override": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "forceInput": True}),
-            },
-        }
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_AncestralOptions',
+            display_name='Ancestral Options 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/sample settings',
+            inputs=[
+                io.Combo.Input('noise_type', options=NoiseLayerType.LIST_ANCESTRAL),
+                io.Int.Input('seed_offset', default=0, max=9007199254740991, min=-9007199254740991),
+                io.Int.Input('seed_override', optional=True, default=0, force_input=True, max=18446744073709551615, min=0),
+            ],
+            outputs=[
+                io.Custom("ANCESTRAL_OPTS").Output('ANCESTRAL_OPTS'),
+            ],
+        )
 
-    RETURN_TYPES = ("ANCESTRAL_OPTS",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/sample settings"
-    FUNCTION = "create_ancestral_opts"
 
-    def create_ancestral_opts(self, noise_type: str, seed_offset: int, determinism: str=NoiseDeterminism.DEFAULT, seed_override: int=None):
+    @classmethod
+    def execute(cls, noise_type: str, seed_offset: int, determinism: str=NoiseDeterminism.DEFAULT, seed_override: int=None) -> io.NodeOutput:
         if isinstance(seed_override, Iterable):
             raise Exception("Passing in a list of seeds for Ancestral Options is not supported at this time.")
-        return (AncestralOptions(noise_type=noise_type, determinism=determinism, seed_offset=seed_offset, seed_override=seed_override),)
+        return io.NodeOutput(AncestralOptions(noise_type=noise_type, determinism=determinism, seed_offset=seed_offset, seed_override=seed_override),)
 
 
-class NoiseLayerReplaceNode:
+class NoiseLayerReplaceNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "batch_offset": ("INT", {"default": 0, "min": 0, "max": BIGMAX}),
-                "noise_type": (NoiseLayerType.LIST,),
-                "seed_gen_override": (SeedNoiseGeneration.LIST_WITH_OVERRIDE,),
-                "seed_offset": ("INT", {"default": 0, "min": BIGMIN, "max": BIGMAX}),
-            },
-            "optional": {
-                "prev_noise_layers": ("NOISE_LAYERS",),
-                "mask_optional": ("MASK",),
-                "seed_override": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "forceInput": True}),
-            },
-        }
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_NoiseLayerReplace',
+            display_name='Noise Layer [Replace] 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/noise layers',
+            inputs=[
+                io.Int.Input('batch_offset', default=0, max=9007199254740991, min=0),
+                io.Combo.Input('noise_type', options=NoiseLayerType.LIST),
+                io.Combo.Input('seed_gen_override', options=SeedNoiseGeneration.LIST_WITH_OVERRIDE),
+                io.Int.Input('seed_offset', default=0, max=9007199254740991, min=-9007199254740991),
+                io.Custom("NOISE_LAYERS").Input('prev_noise_layers', optional=True),
+                io.Mask.Input('mask_optional', optional=True),
+                io.Int.Input('seed_override', optional=True, default=0, force_input=True, max=18446744073709551615, min=0),
+            ],
+            outputs=[
+                io.Custom("NOISE_LAYERS").Output('NOISE_LAYERS'),
+            ],
+        )
 
-    RETURN_TYPES = ("NOISE_LAYERS",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/noise layers"
-    FUNCTION = "create_layers"
 
-    def create_layers(self, batch_offset: int, noise_type: str, seed_gen_override: str, seed_offset: int,
-                      prev_noise_layers: NoiseLayerGroup=None, mask_optional: Tensor=None, seed_override: int=None,):
+    @classmethod
+    def execute(cls, batch_offset: int, noise_type: str, seed_gen_override: str, seed_offset: int,
+                      prev_noise_layers: NoiseLayerGroup=None, mask_optional: Tensor=None, seed_override: int=None,) -> io.NodeOutput:
         # prepare prev_noise_layers
         if prev_noise_layers is None:
             prev_noise_layers = NoiseLayerGroup()
@@ -111,34 +113,36 @@ class NoiseLayerReplaceNode:
         layer = NoiseLayerReplace(noise_type=noise_type, batch_offset=batch_offset, seed_gen_override=seed_gen_override, seed_offset=seed_offset,
                                   seed_override=seed_override, mask=mask_optional)
         prev_noise_layers.add_to_start(layer)
-        return (prev_noise_layers,)
+        return io.NodeOutput(prev_noise_layers,)
 
 
-class NoiseLayerAddNode:
+class NoiseLayerAddNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "batch_offset": ("INT", {"default": 0, "min": 0, "max": BIGMAX}),
-                "noise_type": (NoiseLayerType.LIST,),
-                "seed_gen_override": (SeedNoiseGeneration.LIST_WITH_OVERRIDE,),
-                "seed_offset": ("INT", {"default": 0, "min": BIGMIN, "max": BIGMAX}),
-                "noise_weight": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 10.0, "step": 0.001}),
-            },
-            "optional": {
-                "prev_noise_layers": ("NOISE_LAYERS",),
-                "mask_optional": ("MASK",),
-                "seed_override": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "forceInput": True}),
-            },
-        }
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_NoiseLayerAdd',
+            display_name='Noise Layer [Add] 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/noise layers',
+            inputs=[
+                io.Int.Input('batch_offset', default=0, max=9007199254740991, min=0),
+                io.Combo.Input('noise_type', options=NoiseLayerType.LIST),
+                io.Combo.Input('seed_gen_override', options=SeedNoiseGeneration.LIST_WITH_OVERRIDE),
+                io.Int.Input('seed_offset', default=0, max=9007199254740991, min=-9007199254740991),
+                io.Float.Input('noise_weight', default=0.5, max=10.0, min=0.0, step=0.001),
+                io.Custom("NOISE_LAYERS").Input('prev_noise_layers', optional=True),
+                io.Mask.Input('mask_optional', optional=True),
+                io.Int.Input('seed_override', optional=True, default=0, force_input=True, max=18446744073709551615, min=0),
+            ],
+            outputs=[
+                io.Custom("NOISE_LAYERS").Output('NOISE_LAYERS'),
+            ],
+        )
 
-    RETURN_TYPES = ("NOISE_LAYERS",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/noise layers"
-    FUNCTION = "create_layers"
 
-    def create_layers(self, batch_offset: int, noise_type: str, seed_gen_override: str, seed_offset: int,
+    @classmethod
+    def execute(cls, batch_offset: int, noise_type: str, seed_gen_override: str, seed_offset: int,
                       noise_weight: float,
-                      prev_noise_layers: NoiseLayerGroup=None, mask_optional: Tensor=None, seed_override: int=None,):
+                      prev_noise_layers: NoiseLayerGroup=None, mask_optional: Tensor=None, seed_override: int=None,) -> io.NodeOutput:
         # prepare prev_noise_layers
         if prev_noise_layers is None:
             prev_noise_layers = NoiseLayerGroup()
@@ -148,35 +152,37 @@ class NoiseLayerAddNode:
                               seed_override=seed_override, mask=mask_optional,
                               noise_weight=noise_weight)
         prev_noise_layers.add_to_start(layer)
-        return (prev_noise_layers,)
+        return io.NodeOutput(prev_noise_layers,)
 
 
-class NoiseLayerAddWeightedNode:
+class NoiseLayerAddWeightedNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "batch_offset": ("INT", {"default": 0, "min": 0, "max": BIGMAX}),
-                "noise_type": (NoiseLayerType.LIST,),
-                "seed_gen_override": (SeedNoiseGeneration.LIST_WITH_OVERRIDE,),
-                "seed_offset": ("INT", {"default": 0, "min": BIGMIN, "max": BIGMAX}),
-                "noise_weight": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 10.0, "step": 0.001}),
-                "balance_multiplier": ("FLOAT", {"default": 1.0, "min": 0.0, "step": 0.001}),
-            },
-            "optional": {
-                "prev_noise_layers": ("NOISE_LAYERS",),
-                "mask_optional": ("MASK",),
-                "seed_override": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "forceInput": True}),
-            },
-        }
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_NoiseLayerAddWeighted',
+            display_name='Noise Layer [Add Weighted] 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/noise layers',
+            inputs=[
+                io.Int.Input('batch_offset', default=0, max=9007199254740991, min=0),
+                io.Combo.Input('noise_type', options=NoiseLayerType.LIST),
+                io.Combo.Input('seed_gen_override', options=SeedNoiseGeneration.LIST_WITH_OVERRIDE),
+                io.Int.Input('seed_offset', default=0, max=9007199254740991, min=-9007199254740991),
+                io.Float.Input('noise_weight', default=0.5, max=10.0, min=0.0, step=0.001),
+                io.Float.Input('balance_multiplier', default=1.0, min=0.0, step=0.001),
+                io.Custom("NOISE_LAYERS").Input('prev_noise_layers', optional=True),
+                io.Mask.Input('mask_optional', optional=True),
+                io.Int.Input('seed_override', optional=True, default=0, force_input=True, max=18446744073709551615, min=0),
+            ],
+            outputs=[
+                io.Custom("NOISE_LAYERS").Output('NOISE_LAYERS'),
+            ],
+        )
 
-    RETURN_TYPES = ("NOISE_LAYERS",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/noise layers"
-    FUNCTION = "create_layers"
 
-    def create_layers(self, batch_offset: int, noise_type: str, seed_gen_override: str, seed_offset: int,
+    @classmethod
+    def execute(cls, batch_offset: int, noise_type: str, seed_gen_override: str, seed_offset: int,
                       noise_weight: float, balance_multiplier: float,
-                      prev_noise_layers: NoiseLayerGroup=None, mask_optional: Tensor=None, seed_override: int=None,):
+                      prev_noise_layers: NoiseLayerGroup=None, mask_optional: Tensor=None, seed_override: int=None,) -> io.NodeOutput:
         # prepare prev_noise_layers
         if prev_noise_layers is None:
             prev_noise_layers = NoiseLayerGroup()
@@ -186,34 +192,36 @@ class NoiseLayerAddWeightedNode:
                               seed_override=seed_override, mask=mask_optional,
                               noise_weight=noise_weight, balance_multiplier=balance_multiplier)
         prev_noise_layers.add_to_start(layer)
-        return (prev_noise_layers,)
+        return io.NodeOutput(prev_noise_layers,)
 
 
-class NoiseLayerNormalizedSumNode:
+class NoiseLayerNormalizedSumNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "batch_offset": ("INT", {"default": 0, "min": 0, "max": BIGMAX}),
-                "noise_type": (NoiseLayerType.LIST,),
-                "seed_gen_override": (SeedNoiseGeneration.LIST_WITH_OVERRIDE,),
-                "seed_offset": ("INT", {"default": 0, "min": BIGMIN, "max": BIGMAX}),
-                "noise_weight": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.001}),
-            },
-            "optional": {
-                "prev_noise_layers": ("NOISE_LAYERS",),
-                "mask_optional": ("MASK",),
-                "seed_override": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "forceInput": True}),
-            },
-        }
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_NoiseLayerNormalizedSum',
+            display_name='Noise Layer [Normalized Sum] 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/noise layers',
+            inputs=[
+                io.Int.Input('batch_offset', default=0, max=9007199254740991, min=0),
+                io.Combo.Input('noise_type', options=NoiseLayerType.LIST),
+                io.Combo.Input('seed_gen_override', options=SeedNoiseGeneration.LIST_WITH_OVERRIDE),
+                io.Int.Input('seed_offset', default=0, max=9007199254740991, min=-9007199254740991),
+                io.Float.Input('noise_weight', default=0.5, max=1.0, min=0.0, step=0.001),
+                io.Custom("NOISE_LAYERS").Input('prev_noise_layers', optional=True),
+                io.Mask.Input('mask_optional', optional=True),
+                io.Int.Input('seed_override', optional=True, default=0, force_input=True, max=18446744073709551615, min=0),
+            ],
+            outputs=[
+                io.Custom("NOISE_LAYERS").Output('NOISE_LAYERS'),
+            ],
+        )
 
-    RETURN_TYPES = ("NOISE_LAYERS",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/noise layers"
-    FUNCTION = "create_layers"
 
-    def create_layers(self, batch_offset: int, noise_type: str, seed_gen_override: str, seed_offset: int,
+    @classmethod
+    def execute(cls, batch_offset: int, noise_type: str, seed_gen_override: str, seed_offset: int,
                       noise_weight: float,
-                      prev_noise_layers: NoiseLayerGroup=None, mask_optional: Tensor=None, seed_override: int=None,):
+                      prev_noise_layers: NoiseLayerGroup=None, mask_optional: Tensor=None, seed_override: int=None,) -> io.NodeOutput:
         # prepare prev_noise_layers
         if prev_noise_layers is None:
             prev_noise_layers = NoiseLayerGroup()
@@ -223,63 +231,67 @@ class NoiseLayerNormalizedSumNode:
                               seed_override=seed_override, mask=mask_optional,
                               noise_weight=noise_weight)
         prev_noise_layers.add_to_start(layer)
-        return (prev_noise_layers,)
+        return io.NodeOutput(prev_noise_layers,)
 
 
-class IterationOptionsNode:
+class IterationOptionsNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "iterations": ("INT", {"default": 1, "min": 1}),
-            },
-            "optional": {
-                "iter_batch_offset": ("INT", {"default": 0, "min": 0, "max": BIGMAX}),
-                "iter_seed_offset": ("INT", {"default": 0, "min": BIGMIN, "max": BIGMAX}),
-            }
-        }
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_IterationOptsDefault',
+            display_name='Default Iteration Options 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/iteration opts',
+            inputs=[
+                io.Int.Input('iterations', default=1, min=1),
+                io.Int.Input('iter_batch_offset', optional=True, default=0, max=9007199254740991, min=0),
+                io.Int.Input('iter_seed_offset', optional=True, default=0, max=9007199254740991, min=-9007199254740991),
+            ],
+            outputs=[
+                io.Custom("ITERATION_OPTS").Output('ITERATION_OPTS'),
+            ],
+        )
 
-    RETURN_TYPES = ("ITERATION_OPTS",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/iteration opts"
-    FUNCTION = "create_iter_opts"
 
-    def create_iter_opts(self, iterations: int, iter_batch_offset: int=0, iter_seed_offset: int=0):
+    @classmethod
+    def execute(cls, iterations: int, iter_batch_offset: int=0, iter_seed_offset: int=0) -> io.NodeOutput:
         iter_opts = IterationOptions(iterations=iterations, iter_batch_offset=iter_batch_offset, iter_seed_offset=iter_seed_offset)
-        return (iter_opts,)
+        return io.NodeOutput(iter_opts,)
 
 
-class FreeInitOptionsNode:
+class FreeInitOptionsNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "iterations": ("INT", {"default": 2, "min": 1}),
-                "filter": (FreeInitFilter.LIST,),
-                "d_s": ("FLOAT", {"default": 0.25, "min": 0.0, "max": 1.0, "step": 0.001}),
-                "d_t": ("FLOAT", {"default": 0.25, "min": 0.0, "max": 1.0, "step": 0.001}),
-                "n_butterworth": ("INT", {"default": 4, "min": 1, "max": 100},),
-                "sigma_step": ("INT", {"default": 999, "min": 1, "max": 999}),
-                "apply_to_1st_iter": ("BOOLEAN", {"default": False}),
-                "init_type": (FreeInitOptions.LIST,)
-            },
-            "optional": {
-                "iter_batch_offset": ("INT", {"default": 0, "min": 0, "max": BIGMAX}),
-                "iter_seed_offset": ("INT", {"default": 1, "min": BIGMIN, "max": BIGMAX}),
-            },
-        }
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_IterationOptsFreeInit',
+            display_name='FreeInit Iteration Options 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/iteration opts',
+            inputs=[
+                io.Int.Input('iterations', default=2, min=1),
+                io.Combo.Input('filter', options=FreeInitFilter.LIST),
+                io.Float.Input('d_s', default=0.25, max=1.0, min=0.0, step=0.001),
+                io.Float.Input('d_t', default=0.25, max=1.0, min=0.0, step=0.001),
+                io.Int.Input('n_butterworth', default=4, max=100, min=1),
+                io.Int.Input('sigma_step', default=999, max=999, min=1),
+                io.Boolean.Input('apply_to_1st_iter', default=False),
+                io.Combo.Input('init_type', options=FreeInitOptions.LIST),
+                io.Int.Input('iter_batch_offset', optional=True, default=0, max=9007199254740991, min=0),
+                io.Int.Input('iter_seed_offset', optional=True, default=1, max=9007199254740991, min=-9007199254740991),
+            ],
+            outputs=[
+                io.Custom("ITERATION_OPTS").Output('ITERATION_OPTS'),
+            ],
+        )
 
-    RETURN_TYPES = ("ITERATION_OPTS",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/iteration opts"
-    FUNCTION = "create_iter_opts"
 
-    def create_iter_opts(self, iterations: int, filter: str, d_s: float, d_t: float, n_butterworth: int,
+    @classmethod
+    def execute(cls, iterations: int, filter: str, d_s: float, d_t: float, n_butterworth: int,
                          sigma_step: int, apply_to_1st_iter: bool, init_type: str,
-                         iter_batch_offset: int=0, iter_seed_offset: int=1):
+                         iter_batch_offset: int=0, iter_seed_offset: int=1) -> io.NodeOutput:
         # init_type does nothing for now, not until I add more methods of applying low+high freq noise
         iter_opts = FreeInitOptions(iterations=iterations, step=sigma_step, apply_to_1st_iter=apply_to_1st_iter,
                                     filter=filter, d_s=d_s, d_t=d_t, n=n_butterworth, init_type=init_type,
                                     iter_batch_offset=iter_batch_offset, iter_seed_offset=iter_seed_offset)
-        return (iter_opts,)
+        return io.NodeOutput(iter_opts,)
 
 
 class NoiseCalibrationNode:
@@ -291,7 +303,7 @@ class NoiseCalibrationNode:
                 "thresh_freq": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.001}),
             },
         }
-    
+
     RETURN_TYPES = ("NOISE_CALIBRATION",)
     RETURN_NAMES = ("NOISE_CALIB",)
     CATEGORY = "Animate Diff 🎭🅐🅓/sample settings"
@@ -302,131 +314,141 @@ class NoiseCalibrationNode:
         return (noise_calib,)
 
 
-class CustomCFGNode:
+class CustomCFGNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "cfg_multival": ("MULTIVAL",),
-            },
-            "optional": {
-                "cfg_extras": ("CFG_EXTRAS",),
-            },
-        }
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_CustomCFG',
+            display_name='Custom CFG [Multival] 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/sample settings/custom cfg',
+            inputs=[
+                io.Custom("MULTIVAL").Input('cfg_multival'),
+                io.Custom("CFG_EXTRAS").Input('cfg_extras', optional=True),
+            ],
+            outputs=[
+                io.Custom("CUSTOM_CFG").Output('CUSTOM_CFG'),
+            ],
+        )
 
-    RETURN_TYPES = ("CUSTOM_CFG",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/sample settings/custom cfg"
-    FUNCTION = "create_custom_cfg"
 
-    def create_custom_cfg(self, cfg_multival: Union[float, Tensor], cfg_extras: CFGExtrasGroup=None):
+    @classmethod
+    def execute(cls, cfg_multival: Union[float, Tensor], cfg_extras: CFGExtrasGroup=None) -> io.NodeOutput:
         keyframe = CustomCFGKeyframe(cfg_multival=cfg_multival, cfg_extras=cfg_extras)
         cfg_custom = CustomCFGKeyframeGroup()
         cfg_custom.add(keyframe)
-        return (cfg_custom,)
+        return io.NodeOutput(cfg_custom,)
 
 
-class CustomCFGSimpleNode:
+class CustomCFGSimpleNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "cfg": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0, "step": 0.1}),
-            },
-            "optional": {
-                "cfg_extras": ("CFG_EXTRAS",),
-            },
-        }
-    
-    RETURN_TYPES = ("CUSTOM_CFG",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/sample settings/custom cfg"
-    FUNCTION = "create_custom_cfg"
-
-    def create_custom_cfg(self, cfg: float, cfg_extras: CFGExtrasGroup=None):
-        return CustomCFGNode.create_custom_cfg(self, cfg_multival=cfg, cfg_extras=cfg_extras)
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_CustomCFGSimple',
+            display_name='Custom CFG 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/sample settings/custom cfg',
+            inputs=[
+                io.Float.Input('cfg', default=8.0, max=100.0, min=0.0, step=0.1),
+                io.Custom("CFG_EXTRAS").Input('cfg_extras', optional=True),
+            ],
+            outputs=[
+                io.Custom("CUSTOM_CFG").Output('CUSTOM_CFG'),
+            ],
+        )
 
 
-class CustomCFGKeyframeNode:
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "cfg_multival": ("MULTIVAL",),
-                "start_percent": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.001}),
-                "guarantee_steps": ("INT", {"default": 1, "min": 0, "max": BIGMAX}),
-            },
-            "optional": {
-                "prev_custom_cfg": ("CUSTOM_CFG",),
-                "cfg_extras": ("CFG_EXTRAS",),
-            },
-        }
+    def execute(cls, cfg: float, cfg_extras: CFGExtrasGroup=None) -> io.NodeOutput:
+        return CustomCFGNode.execute( cfg_multival=cfg, cfg_extras=cfg_extras)
 
-    RETURN_TYPES = ("CUSTOM_CFG",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/sample settings/custom cfg"
-    FUNCTION = "create_custom_cfg"
 
-    def create_custom_cfg(self, cfg_multival: Union[float, Tensor], start_percent: float=0.0, guarantee_steps: int=1,
-                          prev_custom_cfg: CustomCFGKeyframeGroup=None, cfg_extras: CFGExtrasGroup=None):
+class CustomCFGKeyframeNode(io.ComfyNode):
+    @classmethod
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_CustomCFGKeyframe',
+            display_name='Custom CFG Keyframe [Multival] 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/sample settings/custom cfg',
+            inputs=[
+                io.Custom("MULTIVAL").Input('cfg_multival'),
+                io.Float.Input('start_percent', default=0.0, max=1.0, min=0.0, step=0.001),
+                io.Int.Input('guarantee_steps', default=1, max=9007199254740991, min=0),
+                io.Custom("CUSTOM_CFG").Input('prev_custom_cfg', optional=True),
+                io.Custom("CFG_EXTRAS").Input('cfg_extras', optional=True),
+            ],
+            outputs=[
+                io.Custom("CUSTOM_CFG").Output('CUSTOM_CFG'),
+            ],
+        )
+
+
+    @classmethod
+    def execute(cls, cfg_multival: Union[float, Tensor], start_percent: float=0.0, guarantee_steps: int=1,
+                          prev_custom_cfg: CustomCFGKeyframeGroup=None, cfg_extras: CFGExtrasGroup=None) -> io.NodeOutput:
         if not prev_custom_cfg:
             prev_custom_cfg = CustomCFGKeyframeGroup()
         prev_custom_cfg = prev_custom_cfg.clone()
         keyframe = CustomCFGKeyframe(cfg_multival=cfg_multival, start_percent=start_percent, guarantee_steps=guarantee_steps, cfg_extras=cfg_extras)
         prev_custom_cfg.add(keyframe)
-        return (prev_custom_cfg,)
+        return io.NodeOutput(prev_custom_cfg,)
 
 
-class CustomCFGKeyframeSimpleNode:
+class CustomCFGKeyframeSimpleNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "cfg": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0, "step": 0.1}),
-                "start_percent": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.001}),
-                "guarantee_steps": ("INT", {"default": 1, "min": 0, "max": BIGMAX}),
-            },
-            "optional": {
-                "prev_custom_cfg": ("CUSTOM_CFG",),
-                "cfg_extras": ("CFG_EXTRAS",),
-            },
-        }
-    
-    RETURN_TYPES = ("CUSTOM_CFG",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/sample settings/custom cfg"
-    FUNCTION = "create_custom_cfg"
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_CustomCFGKeyframeSimple',
+            display_name='Custom CFG Keyframe 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/sample settings/custom cfg',
+            inputs=[
+                io.Float.Input('cfg', default=8.0, max=100.0, min=0.0, step=0.1),
+                io.Float.Input('start_percent', default=0.0, max=1.0, min=0.0, step=0.001),
+                io.Int.Input('guarantee_steps', default=1, max=9007199254740991, min=0),
+                io.Custom("CUSTOM_CFG").Input('prev_custom_cfg', optional=True),
+                io.Custom("CFG_EXTRAS").Input('cfg_extras', optional=True),
+            ],
+            outputs=[
+                io.Custom("CUSTOM_CFG").Output('CUSTOM_CFG'),
+            ],
+        )
 
-    def create_custom_cfg(self, cfg: float, start_percent: float=0.0, guarantee_steps: int=1,
-                          prev_custom_cfg: CustomCFGKeyframeGroup=None, cfg_extras: CFGExtrasGroup=None):
-        return CustomCFGKeyframeNode.create_custom_cfg(self, cfg_multival=cfg, start_percent=start_percent,
+
+    @classmethod
+    def execute(cls, cfg: float, start_percent: float=0.0, guarantee_steps: int=1,
+                          prev_custom_cfg: CustomCFGKeyframeGroup=None, cfg_extras: CFGExtrasGroup=None) -> io.NodeOutput:
+        return CustomCFGKeyframeNode.execute( cfg_multival=cfg, start_percent=start_percent,
                                                        guarantee_steps=guarantee_steps, prev_custom_cfg=prev_custom_cfg, cfg_extras=cfg_extras)
 
 
-class CustomCFGKeyframeInterpolationNode:
+class CustomCFGKeyframeInterpolationNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "start_percent": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.001}),
-                "end_percent": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.001}),
-                "cfg_start": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0, "step": 0.1}),
-                "cfg_end": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0, "step": 0.1}),
-                "interpolation": (InterpolationMethod._LIST, ),
-                "intervals": ("INT", {"default": 50, "min": 2, "max": 100, "step": 1}),
-                "print_keyframes": ("BOOLEAN", {"default": False}),
-            },
-            "optional": {
-                "prev_custom_cfg": ("CUSTOM_CFG",),
-                "cfg_extras": ("CFG_EXTRAS",),
-            },
-        }
-    
-    RETURN_TYPES = ("CUSTOM_CFG",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/sample settings/custom cfg"
-    FUNCTION = "create_custom_cfg"
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_CustomCFGKeyframeInterpolation',
+            display_name='Custom CFG Keyframes Interp. 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/sample settings/custom cfg',
+            inputs=[
+                io.Float.Input('start_percent', default=0.0, max=1.0, min=0.0, step=0.001),
+                io.Float.Input('end_percent', default=1.0, max=1.0, min=0.0, step=0.001),
+                io.Float.Input('cfg_start', default=8.0, max=100.0, min=0.0, step=0.1),
+                io.Float.Input('cfg_end', default=8.0, max=100.0, min=0.0, step=0.1),
+                io.Combo.Input('interpolation', options=InterpolationMethod._LIST),
+                io.Int.Input('intervals', default=50, max=100, min=2, step=1),
+                io.Boolean.Input('print_keyframes', default=False),
+                io.Custom("CUSTOM_CFG").Input('prev_custom_cfg', optional=True),
+                io.Custom("CFG_EXTRAS").Input('cfg_extras', optional=True),
+            ],
+            outputs=[
+                io.Custom("CUSTOM_CFG").Output('CUSTOM_CFG'),
+            ],
+        )
 
-    def create_custom_cfg(self,
+
+    @classmethod
+    def execute(cls,
                           start_percent: float, end_percent: float,
                           cfg_start: float, cfg_end: float, interpolation: str, intervals: int,
                           prev_custom_cfg: CustomCFGKeyframeGroup=None, cfg_extras: CFGExtrasGroup=None,
-                          print_keyframes=False):
+                          print_keyframes=False) -> io.NodeOutput:
         if not prev_custom_cfg:
             prev_custom_cfg = CustomCFGKeyframeGroup()
         prev_custom_cfg = prev_custom_cfg.clone()
@@ -442,33 +464,35 @@ class CustomCFGKeyframeInterpolationNode:
             prev_custom_cfg.add(CustomCFGKeyframe(cfg_multival=float(cfg), start_percent=percent, guarantee_steps=guarantee_steps, cfg_extras=cfg_extras))
             if print_keyframes:
                 logger.info(f"CustomCFGKeyframe - start_percent:{percent} = {cfg}")
-        return (prev_custom_cfg,)
-        
+        return io.NodeOutput(prev_custom_cfg,)
 
-class CustomCFGKeyframeFromListNode:
+
+class CustomCFGKeyframeFromListNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "cfgs_float": ("FLOAT", {"default": -1, "min": -1, "step": 0.001, "forceInput": True}),
-                "start_percent": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.001}),
-                "end_percent": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.001}),
-                "print_keyframes": ("BOOLEAN", {"default": False}),
-            },
-            "optional": {
-                "prev_custom_cfg": ("CUSTOM_CFG",),
-                "cfg_extras": ("CFG_EXTRAS",),
-            }
-        }
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_CustomCFGKeyframeFromList',
+            display_name='Custom CFG Keyframes From List 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/sample settings/custom cfg',
+            inputs=[
+                io.Float.Input('cfgs_float', default=-1, force_input=True, min=-1, step=0.001),
+                io.Float.Input('start_percent', default=0.0, max=1.0, min=0.0, step=0.001),
+                io.Float.Input('end_percent', default=1.0, max=1.0, min=0.0, step=0.001),
+                io.Boolean.Input('print_keyframes', default=False),
+                io.Custom("CUSTOM_CFG").Input('prev_custom_cfg', optional=True),
+                io.Custom("CFG_EXTRAS").Input('cfg_extras', optional=True),
+            ],
+            outputs=[
+                io.Custom("CUSTOM_CFG").Output('CUSTOM_CFG'),
+            ],
+        )
 
-    RETURN_TYPES = ("CUSTOM_CFG",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/sample settings/custom cfg"
-    FUNCTION = "create_custom_cfg"
 
-    def create_custom_cfg(self, cfgs_float: Union[float, list[float]],
+    @classmethod
+    def execute(cls, cfgs_float: Union[float, list[float]],
                               start_percent: float, end_percent: float,
                               prev_custom_cfg: CustomCFGKeyframeGroup=None, cfg_extras: CFGExtrasGroup=None,
-                              print_keyframes=False):
+                              print_keyframes=False) -> io.NodeOutput:
         if not prev_custom_cfg:
             prev_custom_cfg = CustomCFGKeyframeGroup()
         prev_custom_cfg = prev_custom_cfg.clone()
@@ -479,7 +503,7 @@ class CustomCFGKeyframeFromListNode:
         else:
             raise Exception(f"strengths_float must be either an interable input or a float, but was {type(cfgs_float).__repr__}.")
         percents = InterpolationMethod.get_weights(num_from=start_percent, num_to=end_percent, length=len(cfgs_float), method=InterpolationMethod.LINEAR)
-        
+
         is_first = True
         for percent, cfg in zip(percents, cfgs_float):
             guarantee_steps = 0
@@ -489,27 +513,29 @@ class CustomCFGKeyframeFromListNode:
             prev_custom_cfg.add(CustomCFGKeyframe(cfg_multival=float(cfg), start_percent=percent, guarantee_steps=guarantee_steps, cfg_extras=cfg_extras))
             if print_keyframes:
                 logger.info(f"CustomCFGKeyframe - start_percent:{percent} = {cfg}")
-        return (prev_custom_cfg,)
+        return io.NodeOutput(prev_custom_cfg,)
 
 
-class CFGExtrasPAGNode:
+class CFGExtrasPAGNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "scale_multival": ("MULTIVAL",),
-            },
-            "optional": {
-                "prev_extras": ("CFG_EXTRAS",),
-            },
-        }
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_CFGExtrasPAG',
+            display_name='CFG Extras◆PAG [Multival] 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/sample settings/cfg extras',
+            inputs=[
+                io.Custom("MULTIVAL").Input('scale_multival'),
+                io.Custom("CFG_EXTRAS").Input('prev_extras', optional=True),
+            ],
+            outputs=[
+                io.Custom("CFG_EXTRAS").Output('CFG_EXTRAS'),
+            ],
+        )
 
-    RETURN_TYPES = ("CFG_EXTRAS",)
-    FUNCTION = "add_cfg_extras"
 
-    CATEGORY = "Animate Diff 🎭🅐🅓/sample settings/cfg extras"
 
-    def add_cfg_extras(self, scale_multival: Union[float, Tensor], prev_extras: CFGExtrasGroup=None):
+    @classmethod
+    def execute(cls, scale_multival: Union[float, Tensor], prev_extras: CFGExtrasGroup=None) -> io.NodeOutput:
         if prev_extras is None:
             prev_extras = CFGExtrasGroup()
         prev_extras = prev_extras.clone()
@@ -517,51 +543,55 @@ class CFGExtrasPAGNode:
         patch = perturbed_attention_guidance_patch(scale_multival)
         def call_extras(model_options: dict[str]):
             return set_model_options_post_cfg_function(model_options.copy(), patch)
-        
+
         extra = CFGExtras(call_extras)
         prev_extras.add(extra)
-        return (prev_extras,)
+        return io.NodeOutput(prev_extras,)
 
 
-class CFGExtrasPAGSimpleNode:
+class CFGExtrasPAGSimpleNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "scale": ("FLOAT", {"default": 3.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01}),
-            },
-            "optional": {
-                "prev_extras": ("CFG_EXTRAS",),
-            },
-        }
-
-    RETURN_TYPES = ("CFG_EXTRAS",)
-    FUNCTION = "add_cfg_extras"
-
-    CATEGORY = "Animate Diff 🎭🅐🅓/sample settings/cfg extras"
-
-    def add_cfg_extras(self, scale: float, prev_extras: CFGExtrasGroup=None):
-        return CFGExtrasPAGNode.add_cfg_extras(self, scale_multival=scale, prev_extras=prev_extras)
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_CFGExtrasPAGSimple',
+            display_name='CFG Extras◆PAG 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/sample settings/cfg extras',
+            inputs=[
+                io.Float.Input('scale', default=3.0, max=100.0, min=0.0, round=0.01, step=0.1),
+                io.Custom("CFG_EXTRAS").Input('prev_extras', optional=True),
+            ],
+            outputs=[
+                io.Custom("CFG_EXTRAS").Output('CFG_EXTRAS'),
+            ],
+        )
 
 
-class CFGExtrasRescaleCFGNode:
+
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "mult_multival": ("MULTIVAL",),
-            },
-            "optional": {
-                "prev_extras": ("CFG_EXTRAS",),
-            }
-        }
+    def execute(cls, scale: float, prev_extras: CFGExtrasGroup=None) -> io.NodeOutput:
+        return CFGExtrasPAGNode.execute(scale_multival=scale, prev_extras=prev_extras)
 
-    RETURN_TYPES = ("CFG_EXTRAS",)
-    FUNCTION = "add_cfg_extras"
 
-    CATEGORY = "Animate Diff 🎭🅐🅓/sample settings/cfg extras"
+class CFGExtrasRescaleCFGNode(io.ComfyNode):
+    @classmethod
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_CFGExtrasRescaleCFG',
+            display_name='CFG Extras◆RescaleCFG [Multival] 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/sample settings/cfg extras',
+            inputs=[
+                io.Custom("MULTIVAL").Input('mult_multival'),
+                io.Custom("CFG_EXTRAS").Input('prev_extras', optional=True),
+            ],
+            outputs=[
+                io.Custom("CFG_EXTRAS").Output('CFG_EXTRAS'),
+            ],
+        )
 
-    def add_cfg_extras(self, mult_multival: Union[float, Tensor], prev_extras: CFGExtrasGroup=None):
+
+
+    @classmethod
+    def execute(cls, mult_multival: Union[float, Tensor], prev_extras: CFGExtrasGroup=None) -> io.NodeOutput:
         if prev_extras is None:
             prev_extras = CFGExtrasGroup()
         prev_extras = prev_extras.clone()
@@ -569,60 +599,64 @@ class CFGExtrasRescaleCFGNode:
         patch = rescale_cfg_patch(mult_multival)
         def call_extras(model_options: dict[str]):
             return set_model_options_sampler_cfg_function(model_options.copy(), patch)
-        
+
         extra = CFGExtras(call_extras)
         prev_extras.add(extra)
-        return (prev_extras,)
+        return io.NodeOutput(prev_extras,)
 
 
-class CFGExtrasRescaleCFGSimpleNode:
+class CFGExtrasRescaleCFGSimpleNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "multiplier": ("FLOAT", {"default": 0.7, "min": 0.0, "max": 1.0, "step": 0.01}),
-            },
-            "optional": {
-                "prev_extras": ("CFG_EXTRAS",),
-            },
-        }
-
-    RETURN_TYPES = ("CFG_EXTRAS",)
-    FUNCTION = "add_cfg_extras"
-
-    CATEGORY = "Animate Diff 🎭🅐🅓/sample settings/cfg extras"
-
-    def add_cfg_extras(self, multiplier: float, prev_extras: CFGExtrasGroup=None):
-        return CFGExtrasRescaleCFGNode.add_cfg_extras(self, mult_multival=multiplier, prev_extras=prev_extras)
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_CFGExtrasRescaleCFGSimple',
+            display_name='CFG Extras◆RescaleCFG 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/sample settings/cfg extras',
+            inputs=[
+                io.Float.Input('multiplier', default=0.7, max=1.0, min=0.0, step=0.01),
+                io.Custom("CFG_EXTRAS").Input('prev_extras', optional=True),
+            ],
+            outputs=[
+                io.Custom("CFG_EXTRAS").Output('CFG_EXTRAS'),
+            ],
+        )
 
 
-class NoisedImageInjectionNode:
+
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "image": ("IMAGE", ),
-                "vae": ("VAE", ),
-            },
-            "optional": {
-                "mask_opt": ("MASK", ),
-                "invert_mask": ("BOOLEAN", {"default": False}),
-                "resize_image": ("BOOLEAN", {"default": True}),
-                "start_percent": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.001}),
-                "guarantee_steps": ("INT", {"default": 1, "min": 1, "max": BIGMAX}),
-                "img_inject_opts": ("IMAGE_INJECT_OPTIONS", ),
-                "strength_multival": ("MULTIVAL", ),
-                "prev_image_inject": ("IMAGE_INJECT", ),
-            },
-        }
-    
-    RETURN_TYPES = ("IMAGE_INJECT",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/sample settings/image inject"
-    FUNCTION = "create_image_inject"
+    def execute(cls, multiplier: float, prev_extras: CFGExtrasGroup=None) -> io.NodeOutput:
+        return CFGExtrasRescaleCFGNode.execute(mult_multival=multiplier, prev_extras=prev_extras)
 
-    def create_image_inject(self, image: Tensor, vae: VAE, invert_mask: bool, resize_image: bool, start_percent: float,
+
+class NoisedImageInjectionNode(io.ComfyNode):
+    @classmethod
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_NoisedImageInjection',
+            display_name='Image Injection 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/sample settings/image inject',
+            inputs=[
+                io.Image.Input('image'),
+                io.Vae.Input('vae'),
+                io.Mask.Input('mask_opt', optional=True),
+                io.Boolean.Input('invert_mask', optional=True, default=False),
+                io.Boolean.Input('resize_image', optional=True, default=True),
+                io.Float.Input('start_percent', optional=True, default=0.0, max=1.0, min=0.0, step=0.001),
+                io.Int.Input('guarantee_steps', optional=True, default=1, max=9007199254740991, min=1),
+                io.Custom("IMAGE_INJECT_OPTIONS").Input('img_inject_opts', optional=True),
+                io.Custom("MULTIVAL").Input('strength_multival', optional=True),
+                io.Custom("IMAGE_INJECT").Input('prev_image_inject', optional=True),
+            ],
+            outputs=[
+                io.Custom("IMAGE_INJECT").Output('IMAGE_INJECT'),
+            ],
+        )
+
+
+    @classmethod
+    def execute(cls, image: Tensor, vae: VAE, invert_mask: bool, resize_image: bool, start_percent: float,
                             mask_opt: Tensor=None, strength_multival: Union[float, Tensor]=None, prev_image_inject: NoisedImageToInjectGroup=None, guarantee_steps=1,
-                            img_inject_opts=None):
+                            img_inject_opts=None) -> io.NodeOutput:
         if not prev_image_inject:
             prev_image_inject = NoisedImageToInjectGroup()
         prev_image_inject = prev_image_inject.clone()
@@ -630,25 +664,26 @@ class NoisedImageInjectionNode:
                                         start_percent=start_percent, guarantee_steps=guarantee_steps,
                                         img_inject_opts=img_inject_opts)
         prev_image_inject.add(to_inject)
-        return (prev_image_inject,)
+        return io.NodeOutput(prev_image_inject,)
 
 
-class NoisedImageInjectOptionsNode:
+class NoisedImageInjectOptionsNode(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-            },
-            "optional": {
-                "composite_x": ("INT", {"default": 0, "min": 0, "max": MAX_RESOLUTION, "step": 1}),
-                "composite_y": ("INT", {"default": 0, "min": 0, "max": MAX_RESOLUTION, "step": 1}),
-            },
-        }
-    
-    RETURN_TYPES = ("IMAGE_INJECT_OPTIONS",)
-    RETURN_NAMES = ("IMG_INJECT_OPTS",)
-    CATEGORY = "Animate Diff 🎭🅐🅓/sample settings/image inject"
-    FUNCTION = "create_image_inject_opts"
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id='ADE_NoisedImageInjectOptions',
+            display_name='Image Injection Options 🎭🅐🅓',
+            category='Animate Diff 🎭🅐🅓/sample settings/image inject',
+            inputs=[
+                io.Int.Input('composite_x', optional=True, default=0, max=16384, min=0, step=1),
+                io.Int.Input('composite_y', optional=True, default=0, max=16384, min=0, step=1),
+            ],
+            outputs=[
+                io.Custom("IMAGE_INJECT_OPTIONS").Output('IMG_INJECT_OPTS'),
+            ],
+        )
 
-    def create_image_inject_opts(self, x=0, y=0):
-        return (NoisedImageInjectOptions(x=x, y=y),)
+
+    @classmethod
+    def execute(cls, composite_x=0, composite_y=0) -> io.NodeOutput:
+        return io.NodeOutput(NoisedImageInjectOptions(x=composite_x, y=composite_y),)
