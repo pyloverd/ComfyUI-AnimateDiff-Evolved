@@ -1,7 +1,6 @@
 from typing import Union
 from torch import Tensor
 
-from .documentation import short_desc, register_description, coll, DocHelper
 from .motion_module_ad import BlockType
 from .utils_model import ModelTypeSD
 from .utils_motion import AllPerBlocks, PerBlock, PerBlockId, extend_list_to_batch_size
@@ -281,17 +280,7 @@ class PerBlock_SD15_FromFloatsNode:
     RETURN_TYPES = ("PER_BLOCK",)
     CATEGORY = "Animate Diff 🎭🅐🅓/per block"
     FUNCTION = "create_per_block"
-
-    Desc = [
-        short_desc('Use Floats from Value Schedules to select SD1.5 effect/scale values for blocks.'),
-        'SD1.5 Motion Modules contain 21 blocks:',
-        'idx 0 - start of down blocks (down_0__0)',
-        'idx 7 - end of down blocks   (down_3__1)',
-        'idx 8 - mid block            (mid)',
-        'idx 9 - start of up blocks   (up_0__0)',
-        'idx 20 - end of up blocks    (up_3__2)',
-    ]
-    register_description(NodeID, Desc)
+    DESCRIPTION = 'Use Floats from Value Schedules to select SD1.5 effect/scale values for blocks.'
 
     def create_per_block(self,
                          effect_21_floats: Union[list[float], None]=None,
@@ -454,17 +443,7 @@ class PerBlock_SDXL_FromFloatsNode:
     RETURN_TYPES = ("PER_BLOCK",)
     CATEGORY = "Animate Diff 🎭🅐🅓/per block"
     FUNCTION = "create_per_block"
-
-    Desc = [
-        short_desc('Use Floats from Value Schedules to select SDXL effect/scale values for blocks.'),
-        'SDXL Motion Modules contain 16 blocks:',
-        'idx 0 - start of down blocks (down_0__0)',
-        'idx 5 - end of down blocks   (down_2__1)',
-        'idx 6 - mid block            (mid)',
-        'idx 7 - start of up blocks   (up_0__0)',
-        'idx 15 - end of up blocks    (up_2__2)',
-    ]
-    register_description(NodeID, Desc)
+    DESCRIPTION = 'Use Floats from Value Schedules to select SDXL effect/scale values for blocks.'
 
     def create_per_block(self,
                          effect_16_floats: Union[list[float], None]=None,
